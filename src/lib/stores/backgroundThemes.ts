@@ -113,7 +113,9 @@ export const currentBackgroundTheme = writable<BackgroundTheme>(backgroundThemes
 export function setBackgroundTheme(themeId: string) {
 	const theme = backgroundThemes.find(t => t.id === themeId);
 	if (theme) {
-		currentBackgroundTheme.set(theme);
+		backgroundStore.set({
+			currentTheme: theme.primaryGradient
+		});
 		localStorage.setItem('backgroundTheme', themeId);
 	}
 }
@@ -124,7 +126,14 @@ export function loadSavedTheme() {
 	if (savedThemeId) {
 		const theme = backgroundThemes.find(t => t.id === savedThemeId);
 		if (theme) {
-			currentBackgroundTheme.set(theme);
+			backgroundStore.set({
+				currentTheme: theme.primaryGradient
+			});
 		}
 	}
 }
+
+// Background store object for compatibility
+export const backgroundStore = writable({
+	currentTheme: backgroundThemes[0].primaryGradient
+});

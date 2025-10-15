@@ -1,4 +1,5 @@
 import { integer, sqliteTable, text, real } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 export const user = sqliteTable('user', {
 	id: text('id').primaryKey(),
@@ -594,6 +595,67 @@ export const calendarEvents = sqliteTable('calendar_events', {
 	updatedAt: integer('updated_at', { mode: 'timestamp' })
 });
 
+// ===== NEW TABLES FOR ENHANCED FEATURES =====
+
+// Enhanced Tasks (from Todoist)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const projects: any = sqliteTable('projects', {
+        id: text('id').primaryKey(),
+        name: text('name').notNull(),
+        description: text('description'),
+        color: text('color').default('#3B82F6'),
+        icon: text('icon').default('📁'),
+        parentId: text('parent_id').references(() => projects.id), // for sub-projects
+        isArchived: integer('is_archived', { mode: 'boolean' }).default(false),
+        createdAt: integer('created_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+        updatedAt: integer('updated_at', { mode: 'timestamp' }).default(sql`(strftime('%s', 'now'))`),
+});
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const enhancedTasks: any = sqliteTable('enhanced_tasks', {
+	id: text('id').primaryKey(),
+	title: text('title').notNull(),
+	description: text('description'),
+	projectId: text('project_id').references(() => projects.id),
+	priority: integer('priority').default(4), // 1 = highest, 4 = lowest (Todoist style)
+	dueDate: integer('due_date', { mode: 'timestamp' }),
+	dueTime: text('due_time'), // HH:MM format
+	isCompleted: integer('is_completed', { mode: 'boolean' }).default(false),
+	completedAt: integer('completed_at', { mode: 'timestamp' }),
+	labels: text('labels'), // JSON array of label IDs
+	assignedTo: text('assigned_to').references(() => user.id),
+	parentTaskId: text('parent_task_id').references(() => enhancedTasks.id), // for sub-tasks
+	sortOrder: integer('sort_order').default(0),
+	recurring: text('recurring'), // 'daily', 'weekly', 'monthly', etc.
+	recurringEndDate: integer('recurring_end_date', { mode: 'timestamp' }),
+	reminderEnabled: integer('reminder_enabled', { mode: 'boolean' }).default(false),
+	reminderMinutes: integer('reminder_minutes').default(15), // minutes before due date
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
+export const taskLabels = sqliteTable('task_labels', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull(),
+	color: text('color').default('#6B7280'),
+	createdBy: text('created_by').references(() => user.id),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull()
+});
+
+export const taskComments = sqliteTable('task_comments', {
+	id: text('id').primaryKey(),
+	taskId: text('task_id').notNull().references(() => enhancedTasks.id),
+	content: text('content').notNull(),
+	authorId: text('author_id').references(() => user.id),
+	createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp' })
+});
+
 // Types
 export type Session = typeof session.$inferSelect;
 export type User = typeof user.$inferSelect;
+export type Project = typeof projects.$inferSelect;
+export type EnhancedTask = typeof enhancedTasks.$inferSelect;
+export type TaskLabel = typeof taskLabels.$inferSelect;
+export type TaskComment = typeof taskComments.$inferSelect;

@@ -23,11 +23,46 @@
 		timeBlock: string;
 	}>>([]);
 
-	// View mode: 'daily', 'weekly', 'monthly'
-	let viewMode = $state<'daily' | 'weekly' | 'monthly'>('daily');
+	// View mode: 'daily', 'weekly', 'monthly', 'period-tracker'
+	let viewMode = $state<'daily' | 'weekly' | 'monthly' | 'period-tracker'>('daily');
 
 	// Language: 'english' or 'tamil'
 	let language = $state<'english' | 'tamil'>('english');
+
+	// Period Tracker State
+	let showPeriodTracker = $state(false);
+	let periodData = $state<Array<{
+		date: Date;
+		flow: 'light' | 'medium' | 'heavy' | null;
+		symptoms: string[];
+		notes: string;
+		ovulationDay: boolean;
+		fertileWindow: boolean;
+	}>>([]);
+
+	let cycleLength = $state(28); // Average cycle length
+	let periodLength = $state(5); // Average period length
+	let lastPeriodStart = $state<Date | null>(null);
+
+	// Period tracker modals
+	let showPeriodModal = $state(false);
+	let showCycleSettings = $state(false);
+	let selectedPeriodDate = $state(new Date());
+	let selectedFlow = $state<'light' | 'medium' | 'heavy' | 'spotting'>('medium');
+	let selectedSymptoms = $state<string[]>([]);
+	let periodNotes = $state('');
+
+	let newPeriodEntry = $state({
+		flow: 'medium' as 'light' | 'medium' | 'heavy',
+		symptoms: [] as string[],
+		notes: ''
+	});
+
+	// Available symptoms
+	const availableSymptoms = [
+		'cramps', 'headache', 'fatigue', 'mood-swings', 'bloating',
+		'breast-tenderness', 'back-pain', 'nausea', 'insomnia', 'acne'
+	];
 
 	// Swipe handling
 	let startX = $state(0);
@@ -174,14 +209,14 @@
 	}
 
 	function toggleViewMode() {
-		const views: Array<'daily' | 'weekly' | 'monthly'> = ['daily', 'weekly', 'monthly'];
+		const views: Array<'daily' | 'weekly' | 'monthly' | 'period-tracker'> = ['daily', 'weekly', 'monthly', 'period-tracker'];
 		const currentIndex = views.indexOf(viewMode);
 		const nextIndex = (currentIndex + 1) % views.length;
 		viewMode = views[nextIndex];
 	}
 
 	function getNextViewModeName(): string {
-		const views: Array<'daily' | 'weekly' | 'monthly'> = ['daily', 'weekly', 'monthly'];
+		const views: Array<'daily' | 'weekly' | 'monthly' | 'period-tracker'> = ['daily', 'weekly', 'monthly', 'period-tracker'];
 		const currentIndex = views.indexOf(viewMode);
 		const nextIndex = (currentIndex + 1) % views.length;
 		const nextView = views[nextIndex];
@@ -191,12 +226,14 @@
 				case 'daily': return 'Daily';
 				case 'weekly': return 'Weekly';
 				case 'monthly': return 'Monthly';
+				case 'period-tracker': return 'Period Tracker';
 			}
 		} else {
 			switch (nextView) {
 				case 'daily': return 'தினசரி';
 				case 'weekly': return 'வாராந்திர';
 				case 'monthly': return 'மாதாந்திர';
+				case 'period-tracker': return 'காலவரைய கண்காணிப்பு';
 			}
 		}
 		return '';
@@ -513,6 +550,115 @@
 				location: 'Chennai'
 			};
 		}
+	}
+
+	// Period Tracker Functions
+	function getPeriodDataForDate(date: Date) {
+		return periodData.find(entry => 
+			entry.date.toDateString() === date.toDateString()
+		);
+	}
+
+	function isPeriodDay(date: Date): boolean {
+		const entry = getPeriodDataForDate(date);
+		return entry?.flow !== null;
+	}
+
+	function isFertileWindow(date: Date): boolean {
+		if (!lastPeriodStart) return false;
+		
+		const daysSinceLastPeriod = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+		const cycleDay = daysSinceLastPeriod % cycleLength;
+		
+		// Fertile window is typically days 10-16 of cycle
+		return cycleDay >= 10 && cycleDay <= 16;
+	}
+
+	function isOvulationDay(date: Date): boolean {
+		if (!lastPeriodStart) return false;
+		
+		const daysSinceLastPeriod = Math.floor((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+		const cycleDay = daysSinceLastPeriod % cycleLength;
+		
+		// Ovulation typically occurs around day 14
+		return cycleDay === 14;
+	}
+
+	function getPredictedPeriodDays(): Date[] {
+		if (!lastPeriodStart) return [];
+		
+		const predictedDays: Date[] = [];
+		const nextPeriodStart = new Date(lastPeriodStart);
+		nextPeriodStart.setDate(nextPeriodStart.getDate() + cycleLength);
+		
+		for (let i = 0; i < periodLength; i++) {
+			const periodDay = new Date(nextPeriodStart);
+			periodDay.setDate(periodDay.getDate() + i);
+			predictedDays.push(periodDay);
+		}
+		
+		return predictedDays;
+	}
+
+	function savePeriodEntry() {
+		const existingEntry = periodData.find(entry => 
+			entry.date.toDateString() === selectedPeriodDate.toDateString()
+		);
+
+		if (existingEntry) {
+			// Update existing entry
+			existingEntry.flow = newPeriodEntry.flow;
+			existingEntry.symptoms = [...newPeriodEntry.symptoms];
+			existingEntry.notes = newPeriodEntry.notes;
+		} else {
+			// Create new entry
+			const newEntry = {
+				date: new Date(selectedPeriodDate),
+				flow: newPeriodEntry.flow,
+				symptoms: [...newPeriodEntry.symptoms],
+				notes: newPeriodEntry.notes,
+				ovulationDay: isOvulationDay(selectedPeriodDate),
+				fertileWindow: isFertileWindow(selectedPeriodDate)
+			};
+			periodData = [...periodData, newEntry];
+		}
+
+		// Update last period start if this is a period day
+		if (newPeriodEntry.flow && (!lastPeriodStart || selectedPeriodDate > lastPeriodStart)) {
+			lastPeriodStart = new Date(selectedPeriodDate);
+		}
+
+		showPeriodModal = false;
+		resetPeriodEntry();
+	}
+
+	function resetPeriodEntry() {
+		newPeriodEntry = {
+			flow: 'medium',
+			symptoms: [],
+			notes: ''
+		};
+	}
+
+	function toggleSymptom(symptom: string) {
+		if (newPeriodEntry.symptoms.includes(symptom)) {
+			newPeriodEntry.symptoms = newPeriodEntry.symptoms.filter(s => s !== symptom);
+		} else {
+			newPeriodEntry.symptoms = [...newPeriodEntry.symptoms, symptom];
+		}
+	}
+
+	function getCycleInsights() {
+		const totalCycles = Math.floor(periodData.length / periodLength);
+		const avgCycleLength = cycleLength;
+		const avgPeriodLength = periodLength;
+		
+		return {
+			totalCycles,
+			avgCycleLength,
+			avgPeriodLength,
+			nextPeriodDate: lastPeriodStart ? new Date(lastPeriodStart.getTime() + cycleLength * 24 * 60 * 60 * 1000) : null
+		};
 	}
 </script>
 
@@ -1017,6 +1163,292 @@
 		</div>
 	{/if}
 
+	{#if viewMode === 'period-tracker'}
+		{@const today = new Date()}
+		{@const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)}
+		{@const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)}
+		{@const startDate = new Date(firstDay)}
+		{startDate.setDate(startDate.getDate() - firstDay.getDay())}
+		
+		<!-- Period Tracker View -->
+		<div class="space-y-6">
+			<!-- Period Tracker Header -->
+			<div class="glass-card p-6 rounded-2xl shadow-xl border border-white/20">
+				<div class="flex items-center justify-between mb-6">
+					<div class="flex items-center space-x-4">
+						<div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg">
+							<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+							</svg>
+						</div>
+						<div>
+							<h1 class="text-3xl font-bold bg-gradient-to-r from-pink-600 via-rose-600 to-red-600 bg-clip-text text-transparent">
+								{language === 'english' ? 'Period Tracker' : 'மாதவிடாய் கண்காணிப்பு'}
+							</h1>
+							<p class="text-gray-600 text-sm mt-1">
+								{language === 'english' ? 'Track your cycle, predict periods, and monitor health' : 'உங்கள் சுழற்சியைக் கண்காணிக்க, மாதவிடாயை கணிக்க, ஆரோக்கியத்தை கண்காணிக்க'}
+							</p>
+						</div>
+					</div>
+
+					<div class="flex space-x-2">
+						<button
+							onclick={() => showCycleSettings = true}
+							class="px-4 py-2 bg-white/10 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white/20 transition-all duration-200 border border-white/20"
+						>
+							<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+							</svg>
+							{language === 'english' ? 'Settings' : 'அமைப்புகள்'}
+						</button>
+					</div>
+				</div>
+
+				<!-- Cycle Overview -->
+				<div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+					<div class="bg-gradient-to-br from-pink-50 to-rose-50 p-4 rounded-xl border border-pink-100">
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm text-pink-600 font-medium">
+									{language === 'english' ? 'Cycle Day' : 'சுழற்சி நாள்'}
+								</p>
+								<p class="text-2xl font-bold text-pink-800">
+									{lastPeriodStart ? Math.floor((new Date().getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24)) % cycleLength + 1 : '?'}
+								</p>
+							</div>
+							<div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+								<svg class="w-5 h-5 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+								</svg>
+							</div>
+						</div>
+					</div>
+
+					<div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100">
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm text-blue-600 font-medium">
+									{language === 'english' ? 'Next Period' : 'அடுத்த மாதவிடாய்'}
+								</p>
+								<p class="text-lg font-bold text-blue-800">
+									{lastPeriodStart ? new Date(lastPeriodStart.getTime() + cycleLength * 24 * 60 * 60 * 1000).toLocaleDateString() : 'Not set'}
+								</p>
+							</div>
+							<div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+								<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+								</svg>
+							</div>
+						</div>
+					</div>
+
+					<div class="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm text-green-600 font-medium">
+									{language === 'english' ? 'Fertile Window' : 'கருத்தரித்தல் சாளரம்'}
+								</p>
+								<p class="text-lg font-bold text-green-800">
+									{isFertileWindow(new Date()) ? 'Yes' : 'No'}
+								</p>
+							</div>
+							<div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+								<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+								</svg>
+							</div>
+						</div>
+					</div>
+
+					<div class="bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-xl border border-purple-100">
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm text-purple-600 font-medium">
+									{language === 'english' ? 'Ovulation' : 'முட்டை விட்டுவிடல்'}
+								</p>
+								<p class="text-lg font-bold text-purple-800">
+									{isOvulationDay(new Date()) ? 'Today' : 'Not today'}
+								</p>
+							</div>
+							<div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+								<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+								</svg>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Calendar with Period Indicators -->
+			<div class="glass-card p-6 rounded-2xl shadow-xl border border-white/20">
+				<div class="flex items-center justify-between mb-6">
+					<h2 class="text-xl font-bold text-gray-800">
+						{language === 'english' ? 'Period Calendar' : 'மாதவிடாய் நாட்காட்டி'}
+					</h2>
+					<div class="flex space-x-2">
+						<button
+							onclick={() => { selectedPeriodDate = new Date(); showPeriodModal = true; }}
+							class="px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+						>
+							<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+							</svg>
+							{language === 'english' ? 'Log Period' : 'மாதவிடாயை பதிவு செய்'}
+						</button>
+					</div>
+				</div>
+
+				<!-- Mini Calendar -->
+				<div class="grid grid-cols-7 gap-2 mb-4">
+					{#each ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as day}
+						<div class="p-2 text-center text-sm font-medium text-gray-500">
+							{language === 'english' ? day : 
+							 day === 'Sun' ? 'ஞாயிறு' :
+							 day === 'Mon' ? 'திங்கள்' :
+							 day === 'Tue' ? 'செவ்வாய்' :
+							 day === 'Wed' ? 'புதன்' :
+							 day === 'Thu' ? 'வியாழன்' :
+							 day === 'Fri' ? 'வெள்ளி' :
+							 'சனி'}
+						</div>
+					{/each}
+
+					{#each Array(42) as _, i}
+						{@const currentDate = new Date(startDate)}
+						{currentDate.setDate(startDate.getDate() + i)}
+						{@const isCurrentMonth = currentDate.getMonth() === today.getMonth()}
+						{@const isToday = currentDate.toDateString() === today.toDateString()}
+						{@const periodEntry = getPeriodDataForDate(currentDate)}
+						{@const isPeriod = isPeriodDay(currentDate)}
+						{@const isFertile = isFertileWindow(currentDate)}
+						{@const isOvulation = isOvulationDay(currentDate)}
+						{@const predictedPeriod = getPredictedPeriodDays().some(d => d.toDateString() === currentDate.toDateString())}
+
+						<button
+							class="relative w-10 h-10 rounded-lg flex items-center justify-center text-sm transition-all duration-200 hover:scale-110
+								{isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
+								{isToday ? 'bg-pink-500 text-white font-bold' : ''}
+								{isPeriod ? 'bg-red-500 text-white' : ''}
+								{isFertile && !isPeriod ? 'bg-green-200 text-green-800' : ''}
+								{isOvulation ? 'bg-purple-500 text-white' : ''}
+								{predictedPeriod && !isPeriod ? 'bg-red-200 text-red-800' : ''}
+								{!isPeriod && !isFertile && !isOvulation && !predictedPeriod && !isToday ? 'hover:bg-gray-100' : ''}"
+							onclick={() => { selectedPeriodDate = new Date(currentDate); showPeriodModal = true; }}
+						>
+							{currentDate.getDate()}
+
+							{#if periodEntry?.flow === 'heavy'}
+								<div class="absolute -top-1 -right-1 w-2 h-2 bg-red-600 rounded-full"></div>
+							{:else if periodEntry?.flow === 'medium'}
+								<div class="absolute -top-1 -right-1 w-2 h-2 bg-red-400 rounded-full"></div>
+							{:else if periodEntry?.flow === 'light'}
+								<div class="absolute -top-1 -right-1 w-2 h-2 bg-red-300 rounded-full"></div>
+							{/if}
+						</button>
+					{/each}
+				</div>
+
+				<!-- Legend -->
+				<div class="flex flex-wrap gap-4 text-xs">
+					<div class="flex items-center space-x-2">
+						<div class="w-3 h-3 bg-red-500 rounded"></div>
+						<span>{language === 'english' ? 'Period' : 'மாதவிடாய்'}</span>
+					</div>
+					<div class="flex items-center space-x-2">
+						<div class="w-3 h-3 bg-green-200 rounded"></div>
+						<span>{language === 'english' ? 'Fertile' : 'கருத்தரித்தல்'}</span>
+					</div>
+					<div class="flex items-center space-x-2">
+						<div class="w-3 h-3 bg-purple-500 rounded"></div>
+						<span>{language === 'english' ? 'Ovulation' : 'முட்டை விட்டுவிடல்'}</span>
+					</div>
+					<div class="flex items-center space-x-2">
+						<div class="w-3 h-3 bg-red-200 rounded"></div>
+						<span>{language === 'english' ? 'Predicted' : 'கணிக்கப்பட்ட'}</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Symptoms & Insights -->
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+				<!-- Recent Symptoms -->
+				<div class="glass-card p-6 rounded-2xl shadow-xl border border-white/20">
+					<h3 class="text-lg font-bold text-gray-800 mb-4">
+						{language === 'english' ? 'Recent Symptoms' : 'சமீபத்திய அறிகுறிகள்'}
+					</h3>
+					<div class="space-y-3">
+						{#each periodData.slice(-5).reverse() as entry}
+							<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+								<div class="flex items-center space-x-3">
+									<div class="text-sm font-medium text-gray-700">
+										{entry.date.toLocaleDateString()}
+									</div>
+									{#if entry.flow}
+										<span class="px-2 py-1 text-xs rounded-full 
+											{entry.flow === 'heavy' ? 'bg-red-100 text-red-800' : 
+											 entry.flow === 'medium' ? 'bg-red-100 text-red-700' : 
+											 'bg-red-50 text-red-600'}">
+											{entry.flow}
+										</span>
+									{/if}
+								</div>
+								<div class="flex space-x-1">
+									{#each entry.symptoms.slice(0, 3) as symptom}
+										<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+											{symptom}
+										</span>
+									{/each}
+									{#if entry.symptoms.length > 3}
+										<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+											+{entry.symptoms.length - 3}
+										</span>
+									{/if}
+								</div>
+							</div>
+						{/each}
+						{#if periodData.length === 0}
+							<div class="text-center py-8 text-gray-500">
+								<svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+								</svg>
+								<p>{language === 'english' ? 'No period data logged yet' : 'மாதவிடாய் தரவு இன்னும் பதிவு செய்யப்படவில்லை'}</p>
+							</div>
+						{/if}
+					</div>
+				</div>
+
+				<!-- Cycle Insights -->
+				<div class="glass-card p-6 rounded-2xl shadow-xl border border-white/20">
+					<h3 class="text-lg font-bold text-gray-800 mb-4">
+						{language === 'english' ? 'Cycle Insights' : 'சுழற்சி நுண்ணறிவு'}
+					</h3>
+					<div class="space-y-4">
+						<div class="flex justify-between items-center p-3 bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg">
+							<span class="text-sm font-medium text-pink-700">
+								{language === 'english' ? 'Average Cycle Length' : 'சராசரி சுழற்சி நீளம்'}
+							</span>
+							<span class="text-lg font-bold text-pink-800">{cycleLength} days</span>
+						</div>
+						<div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+							<span class="text-sm font-medium text-blue-700">
+								{language === 'english' ? 'Average Period Length' : 'சராசரி மாதவிடாய் நீளம்'}
+							</span>
+							<span class="text-lg font-bold text-blue-800">{periodLength} days</span>
+						</div>
+						<div class="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg">
+							<span class="text-sm font-medium text-green-700">
+								{language === 'english' ? 'Total Logged Periods' : 'மொத்த பதிவு செய்யப்பட்ட மாதவிடாய்கள்'}
+							</span>
+							<span class="text-lg font-bold text-green-800">{periodData.filter(p => p.flow).length}</span>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Swipe Instructions -->
 	<div class="fixed bottom-24 left-4 right-4 text-center">
 		<div class="glass-card p-3 rounded-lg">
@@ -1364,3 +1796,225 @@
 		animation: float-fast 3s ease-in-out infinite;
 	}
 </style>
+
+<!-- Period Tracker Modals -->
+{#if showPeriodModal}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+			<div class="p-6">
+				<div class="flex items-center justify-between mb-6">
+					<h3 class="text-xl font-bold text-gray-900 dark:text-white">
+						{language === 'english' ? 'Log Period' : 'காலவரையை பதிவு செய்ய'}
+					</h3>
+					<button
+						onclick={() => showPeriodModal = false}
+						class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+						aria-label="Close period logging modal"
+					>
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<div class="space-y-6">
+					<!-- Date Selection -->
+					<div>
+						<label for="period-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							{language === 'english' ? 'Date' : 'தேதி'}
+						</label>
+						<input
+							id="period-date"
+							type="date"
+							bind:value={selectedPeriodDate}
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+						/>
+					</div>
+
+					<!-- Flow Intensity -->
+					<div>
+						<h3 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+							{language === 'english' ? 'Flow Intensity' : 'ஓட்டத்தின் தீவிரம்'}
+						</h3>
+						<div class="grid grid-cols-2 gap-3">
+							{#each [
+								{ value: 'light', label: language === 'english' ? 'Light' : 'மென்மையான', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
+								{ value: 'medium', label: language === 'english' ? 'Medium' : 'நடுத்தர', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
+								{ value: 'heavy', label: language === 'english' ? 'Heavy' : 'கனமான', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+								{ value: 'spotting', label: language === 'english' ? 'Spotting' : 'சிறிய துளிகள்', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' }
+							] as flow}
+								<button
+									type="button"
+									onclick={() => selectedFlow = flow.value as 'light' | 'medium' | 'heavy' | 'spotting'}
+									class="p-3 rounded-lg border-2 transition-all {selectedFlow === flow.value ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'}"
+								>
+									<div class="flex items-center space-x-2">
+										<div class="w-3 h-3 rounded-full {flow.color}"></div>
+										<span class="text-sm font-medium">{flow.label}</span>
+									</div>
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Symptoms -->
+					<div>
+						<h3 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+							{language === 'english' ? 'Symptoms' : 'அறிகுறிகள்'}
+						</h3>
+						<div class="grid grid-cols-2 gap-2">
+							{#each [
+								{ value: 'cramps', label: language === 'english' ? 'Cramps' : 'வலி' },
+								{ value: 'headache', label: language === 'english' ? 'Headache' : 'தலைவலி' },
+								{ value: 'fatigue', label: language === 'english' ? 'Fatigue' : 'சோர்வு' },
+								{ value: 'mood-swings', label: language === 'english' ? 'Mood Swings' : 'மனநிலை மாற்றங்கள்' },
+								{ value: 'bloating', label: language === 'english' ? 'Bloating' : 'வயிறு வீக்கம்' },
+								{ value: 'breast-tenderness', label: language === 'english' ? 'Breast Tenderness' : 'மார்பு வலி' },
+								{ value: 'back-pain', label: language === 'english' ? 'Back Pain' : 'முதுகு வலி' },
+								{ value: 'nausea', label: language === 'english' ? 'Nausea' : 'வாந்தி எடுப்பு' }
+							] as symptom}
+								<label class="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+									<input
+										type="checkbox"
+										bind:group={selectedSymptoms}
+										value={symptom.value}
+										class="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+									/>
+									<span class="text-sm text-gray-700 dark:text-gray-300">{symptom.label}</span>
+								</label>
+							{/each}
+						</div>
+					</div>
+
+					<!-- Notes -->
+					<div>
+						<label for="period-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							{language === 'english' ? 'Notes' : 'குறிப்புகள்'}
+						</label>
+						<textarea
+							id="period-notes"
+							bind:value={periodNotes}
+							placeholder={language === 'english' ? 'Add any additional notes...' : 'கூடுதல் குறிப்புகளைச் சேர்க்க...'}
+							rows="3"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+						></textarea>
+					</div>
+
+					<!-- Action Buttons -->
+					<div class="flex space-x-3 pt-4">
+						<button
+							onclick={() => showPeriodModal = false}
+							class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+						>
+							{language === 'english' ? 'Cancel' : 'ரத்து செய்'}
+						</button>
+						<button
+							onclick={savePeriodEntry}
+							class="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium"
+						>
+							{language === 'english' ? 'Save' : 'சேமி'}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if showCycleSettings}
+	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white/95 dark:bg-gray-800/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-md w-full">
+			<div class="p-6">
+				<div class="flex items-center justify-between mb-6">
+					<h3 class="text-xl font-bold text-gray-900 dark:text-white">
+						{language === 'english' ? 'Cycle Settings' : 'சுழற்சி அமைப்புகள்'}
+					</h3>
+					<button
+						onclick={() => showCycleSettings = false}
+						class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+						aria-label="Close cycle settings modal"
+					>
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
+
+				<div class="space-y-6">
+					<!-- Cycle Length -->
+					<div>
+						<label for="cycle-length" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							{language === 'english' ? 'Average Cycle Length (days)' : 'சராசரி சுழற்சி நீளம் (நாட்கள்)'}
+						</label>
+						<input
+							id="cycle-length"
+							type="number"
+							bind:value={cycleLength}
+							min="21"
+							max="35"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+						/>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							{language === 'english' ? 'Typical range: 21-35 days' : 'பொதுவான வரம்பு: 21-35 நாட்கள்'}
+						</p>
+					</div>
+
+					<!-- Period Length -->
+					<div>
+						<label for="period-length" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							{language === 'english' ? 'Average Period Length (days)' : 'சராசரி காலவரைய நீளம் (நாட்கள்)'}
+						</label>
+						<input
+							id="period-length"
+							type="number"
+							bind:value={periodLength}
+							min="3"
+							max="7"
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+						/>
+						<p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							{language === 'english' ? 'Typical range: 3-7 days' : 'பொதுவான வரம்பு: 3-7 நாட்கள்'}
+						</p>
+					</div>
+
+					<!-- Last Period Start Date -->
+					<div>
+						<label for="last-period-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							{language === 'english' ? 'Last Period Start Date' : 'கடைசி காலவரைய தொடக்க தேதி'}
+						</label>
+						<input
+							id="last-period-date"
+							type="date"
+							bind:value={lastPeriodStart}
+							class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+						/>
+					</div>
+
+					<!-- Action Buttons -->
+					<div class="flex space-x-3 pt-4">
+						<button
+							onclick={() => showCycleSettings = false}
+							class="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+						>
+							{language === 'english' ? 'Cancel' : 'ரத்து செய்'}
+						</button>
+						<button
+							onclick={() => {
+								// Save settings to localStorage
+								localStorage.setItem('periodTracker_cycleLength', cycleLength.toString());
+								localStorage.setItem('periodTracker_periodLength', periodLength.toString());
+								if (lastPeriodStart) {
+									localStorage.setItem('periodTracker_lastPeriodStart', lastPeriodStart.toISOString());
+								}
+								showCycleSettings = false;
+							}}
+							class="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors font-medium"
+						>
+							{language === 'english' ? 'Save Settings' : 'அமைப்புகளை சேமி'}
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/if}

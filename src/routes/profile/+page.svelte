@@ -173,7 +173,7 @@
 					<div class="flex flex-col">
 						<span class="text-xs text-gray-500 uppercase tracking-wide">Welcome back</span>
 						<span class="text-sm font-semibold text-gray-700">
-							{profileData.nickname || profileData.username || 'Family Member'}
+							{$userStore.nickname || $userStore.username || 'Family Member'}
 						</span>
 					</div>
 				</div>
@@ -428,7 +428,7 @@
 							<input
 								id="emergencyContact"
 								type="text"
-								bind:value={profileData.emergencyContact}
+								bind:value={$userStore.emergencyContact}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
@@ -437,7 +437,7 @@
 							<input
 								id="emergencyContactPhone"
 								type="tel"
-								bind:value={profileData.emergencyContactPhone}
+								bind:value={$userStore.emergencyContactPhone}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>

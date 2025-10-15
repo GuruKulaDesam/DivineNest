@@ -2,10 +2,13 @@ import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
 export interface User {
+	id: string;
 	username: string;
 	nickname: string;
 	email: string;
 	phoneNumber: string;
+	emergencyContact: string;
+	emergencyContactPhone: string;
 	role: string;
 	age: number;
 	location: string;
@@ -15,10 +18,13 @@ export interface User {
 }
 
 const defaultUser: User = {
+	id: 'default-user',
 	username: 'family_member',
 	nickname: 'Family Member',
 	email: 'family@example.com',
 	phoneNumber: '',
+	emergencyContact: '',
+	emergencyContactPhone: '',
 	role: 'Parent',
 	age: 35,
 	location: 'New York, NY, USA',
