@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { currentBackgroundTheme, loadSavedTheme } from '$lib/stores/backgroundThemes';
+	import BackgroundThemeSelector from '$lib/components/BackgroundThemeSelector.svelte';
 
 	let showAllTables = $state(false);
+
+	// Load saved background theme
+	onMount(() => {
+		loadSavedTheme();
+	});
 
 	// Listen for the showAllTables event from the layout
 	onMount(() => {
@@ -112,7 +119,27 @@
 	<title>Divine Nest - Home</title>
 </svelte:head>
 
-<div class="min-h-screen p-4 pb-24">
+<div class="min-h-screen relative overflow-hidden p-4 pb-24">
+	<!-- Dynamic 3D Background Layers -->
+	<div class="absolute inset-0 opacity-50">
+		<!-- Primary gradient layer -->
+		<div class="absolute inset-0 bg-gradient-to-br {$currentBackgroundTheme.primaryGradient}"></div>
+		
+		<!-- Secondary depth layer -->
+		<div class="absolute inset-0 bg-gradient-to-tl {$currentBackgroundTheme.secondaryGradient}"></div>
+		
+		<!-- Floating geometric shapes -->
+		{#each $currentBackgroundTheme.floatingShapes as shape}
+			<div class="absolute {shape.position} {shape.size} bg-gradient-to-br {shape.colors} {shape.shape} {shape.animation}"></div>
+		{/each}
+		
+		<!-- Mesh overlay for 3D effect -->
+		<div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+		<div class="absolute inset-0 bg-gradient-to-tl from-transparent via-orange-100/3 to-transparent"></div>
+	</div>
+
+	<!-- Background Theme Selector -->
+	<BackgroundThemeSelector />
 	{#if showAllTables}
 		<div class="max-w-7xl mx-auto">
 			<div class="flex justify-between items-center mb-6">
@@ -366,5 +393,33 @@
 	.glass-card:hover {
 		background: rgba(255, 255, 255, 0.95);
 		transform: translateY(-2px);
+	}
+
+	/* 3D Floating Animations */
+	@keyframes float-slow {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-20px) rotate(5deg); }
+	}
+	
+	@keyframes float-medium {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-15px) rotate(-3deg); }
+	}
+	
+	@keyframes float-fast {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-25px) rotate(8deg); }
+	}
+	
+	.animate-float-slow {
+		animation: float-slow 6s ease-in-out infinite;
+	}
+	
+	.animate-float-medium {
+		animation: float-medium 4s ease-in-out infinite;
+	}
+	
+	.animate-float-fast {
+		animation: float-fast 3s ease-in-out infinite;
 	}
 </style>

@@ -1,4 +1,8 @@
 <script lang="ts">
+	import divineNestLogo from '$lib/assets/Divine_Nest_Logo_Light.svg';
+	import shivohmLogo from '$lib/assets/Shivohm_Logo.svg';
+	import { userStore } from '$lib/stores/user';
+	import { onMount } from 'svelte';
 	let activeTab = $state('profile');
 	let touchStartX = $state(0);
 	let touchStartY = $state(0);
@@ -12,27 +16,14 @@
 	let isSeekBarDragging = $state(false);
 	let topNavExpanded = $state(false);
 
+	// Load user data on mount
+	onMount(() => {
+		userStore.loadFromStorage();
+	});
+
 	const tabs = [
 		{ id: 'profile', label: 'Profile Settings', icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>' }
 	];
-
-	// Profile form data
-	let profileData = $state({
-		username: 'family_member',
-		nickname: 'Family Member',
-		email: 'family@example.com',
-		phoneNumber: '',
-		role: 'Parent', // Child, Parent, Relative, Visitor, Admin
-		age: 35,
-		location: 'New York, NY, USA',
-		locationCoordinates: '',
-		timezone: 'America/New_York',
-		preferredLanguage: 'en',
-		emergencyContact: '',
-		emergencyContactPhone: '',
-		pictureUrl: '',
-		isActive: true
-	});
 
 	const userRoles = [
 		{ value: 'Child', label: 'Child' },
@@ -64,8 +55,9 @@
 
 	function saveProfile(event: Event) {
 		event.preventDefault();
-		// TODO: Implement save functionality
-		console.log('Saving profile:', profileData);
+		// Save to user store
+		userStore.saveToStorage($userStore);
+		console.log('Saving profile:', $userStore);
 		showSnackBar('Profile settings saved successfully!', 'success');
 	}
 
@@ -174,7 +166,7 @@
 				<!-- Divine Nest Logo -->
 				<div class="flex items-center space-x-2">
 					<img
-						src="/Divine_Nest_Logo_Light.png"
+						src={divineNestLogo}
 						alt="Divine Nest Logo"
 						class="w-8 h-8 object-contain"
 					/>
@@ -336,7 +328,7 @@
 							<input
 								id="username"
 								type="text"
-								bind:value={profileData.username}
+								bind:value={$userStore.username}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								required
 							/>
@@ -346,7 +338,7 @@
 							<input
 								id="nickname"
 								type="text"
-								bind:value={profileData.nickname}
+								bind:value={$userStore.nickname}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
@@ -355,7 +347,7 @@
 							<input
 								id="email"
 								type="email"
-								bind:value={profileData.email}
+								bind:value={$userStore.email}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
@@ -364,7 +356,7 @@
 							<input
 								id="phoneNumber"
 								type="tel"
-								bind:value={profileData.phoneNumber}
+								bind:value={$userStore.phoneNumber}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
@@ -372,7 +364,7 @@
 							<label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
 							<select
 								id="role"
-								bind:value={profileData.role}
+								bind:value={$userStore.role}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								{#each userRoles as role}
@@ -385,7 +377,7 @@
 							<input
 								id="age"
 								type="number"
-								bind:value={profileData.age}
+								bind:value={$userStore.age}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								min="1"
 								max="120"
@@ -396,7 +388,7 @@
 							<input
 								id="location"
 								type="text"
-								bind:value={profileData.location}
+								bind:value={$userStore.location}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							/>
 						</div>
@@ -404,7 +396,7 @@
 							<label for="timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
 							<select
 								id="timezone"
-								bind:value={profileData.timezone}
+								bind:value={$userStore.timezone}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								{#each timezones as tz}
@@ -416,7 +408,7 @@
 							<label for="preferredLanguage" class="block text-sm font-medium text-gray-700 mb-1">Preferred Language</label>
 							<select
 								id="preferredLanguage"
-								bind:value={profileData.preferredLanguage}
+								bind:value={$userStore.preferredLanguage}
 								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								{#each languages as lang}
@@ -463,6 +455,18 @@
 			</form>
 		</div>
 	{/if}
+
+	<!-- Footer with Shivohm Logo -->
+	<div class="mt-8 pt-6 border-t border-gray-200/50">
+		<div class="flex justify-center items-center space-x-3">
+			<img
+				src={shivohmLogo}
+				alt="Shivohm Logo"
+				class="w-6 h-6 object-contain opacity-70"
+			/>
+			<span class="text-xs text-gray-500">Powered by Shivohm</span>
+		</div>
+	</div>
 </div>
 </div>
 

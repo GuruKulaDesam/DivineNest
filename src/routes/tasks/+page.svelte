@@ -1,12 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { currentBackgroundTheme, loadSavedTheme } from '$lib/stores/backgroundThemes';
+	import BackgroundThemeSelector from '$lib/components/BackgroundThemeSelector.svelte';
 
 	let activeTab = $state('dashboard');
 	let tasks = $state<Array<{id: string; type: string; category: string; frequency: string; status: string}>>([]);
 
-	// Mock data for now
+	// Load saved background theme
 	onMount(() => {
+		loadSavedTheme();
+		
+		// Mock data for now
 		tasks = [
 			{ id: '1', type: 'Duty', category: 'Household', frequency: 'Daily', status: 'Pending' },
 			{ id: '2', type: 'Ritual', category: 'Spiritual', frequency: 'Daily', status: 'Completed' }
@@ -25,7 +29,27 @@
 	<title>Tasks - Divine Nest</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 pb-20">
+<div class="min-h-screen relative overflow-hidden p-4 pb-20">
+	<!-- Dynamic 3D Background Layers -->
+	<div class="absolute inset-0 opacity-50">
+		<!-- Primary gradient layer -->
+		<div class="absolute inset-0 bg-gradient-to-br {$currentBackgroundTheme.primaryGradient}"></div>
+		
+		<!-- Secondary depth layer -->
+		<div class="absolute inset-0 bg-gradient-to-tl {$currentBackgroundTheme.secondaryGradient}"></div>
+		
+		<!-- Floating geometric shapes -->
+		{#each $currentBackgroundTheme.floatingShapes as shape}
+			<div class="absolute {shape.position} {shape.size} bg-gradient-to-br {shape.colors} {shape.shape} {shape.animation}"></div>
+		{/each}
+		
+		<!-- Mesh overlay for 3D effect -->
+		<div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+		<div class="absolute inset-0 bg-gradient-to-tl from-transparent via-blue-100/3 to-transparent"></div>
+	</div>
+
+	<!-- Background Theme Selector -->
+	<BackgroundThemeSelector />
 	<h1 class="text-2xl font-bold mb-6 text-gray-800">Tasks</h1>
 
 	<!-- Tabs -->
@@ -117,5 +141,33 @@
 		background: rgba(255, 255, 255, 0.25);
 		backdrop-filter: blur(10px);
 		border: 1px solid rgba(255, 255, 255, 0.18);
+	}
+
+	/* 3D Floating Animations */
+	@keyframes float-slow {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-20px) rotate(5deg); }
+	}
+	
+	@keyframes float-medium {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-15px) rotate(-3deg); }
+	}
+	
+	@keyframes float-fast {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-25px) rotate(8deg); }
+	}
+	
+	.animate-float-slow {
+		animation: float-slow 6s ease-in-out infinite;
+	}
+	
+	.animate-float-medium {
+		animation: float-medium 4s ease-in-out infinite;
+	}
+	
+	.animate-float-fast {
+		animation: float-fast 3s ease-in-out infinite;
 	}
 </style>

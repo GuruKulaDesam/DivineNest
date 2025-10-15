@@ -12,13 +12,13 @@
   "categories": ["lifestyle", "productivity", "utilities"],
   "icons": [
     {
-      "src": "/Shivohm_Logo_3.png",
+      "src": "/src/lib/assets/Shivohm_Logo.svg",
       "sizes": "32x32",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "/logo-light.svg",
+      "src": "/src/lib/assets/Divine_Nest_Logo_Light.svg",
       "sizes": "32x32",
       "type": "image/svg+xml",
       "purpose": "any maskable"
@@ -68,7 +68,7 @@
       "url": "/todo",
       "icons": [
         {
-          "src": "/favicon.svg",
+          "src": "/src/lib/assets/favicon.svg",
           "sizes": "32x32"
         }
       ]
@@ -80,7 +80,7 @@
       "url": "/finances/expenses",
       "icons": [
         {
-          "src": "/favicon.svg",
+          "src": "/src/lib/assets/favicon.svg",
           "sizes": "32x32"
         }
       ]
@@ -92,7 +92,7 @@
       "url": "/members",
       "icons": [
         {
-          "src": "/favicon.svg",
+          "src": "/src/lib/assets/favicon.svg",
           "sizes": "32x32"
         }
       ]

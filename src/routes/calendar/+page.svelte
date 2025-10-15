@@ -608,7 +608,7 @@
 				<div class="flex space-x-2">
 					<button
 						onclick={() => createEvent('morning')}
-						class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+						class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
 					>
 						<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -617,7 +617,7 @@
 					</button>
 					<button
 						onclick={() => showSmartInput = true}
-						class="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+						class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
 						title={language === 'english' ? 'Smart Event Creation' : 'புத்திசாலி நிகழ்வு உருவாக்கம்'}
 					>
 						<svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1267,7 +1267,7 @@
 	<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 		<div class="glass-card p-6 rounded-xl w-full max-w-md">
 			<h3 class="text-lg font-semibold mb-4 flex items-center">
-				<svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg class="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
 				</svg>
 				{language === 'english' ? 'Smart Event Creation' : 'புத்திசாலி நிகழ்வு உருவாக்கம்'}
@@ -1281,7 +1281,7 @@
 					<textarea
 						id="smart-input"
 						bind:value={naturalLanguageInput}
-						class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+						class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
 						rows="3"
 						placeholder={language === 'english' 
 							? 'e.g., "Lunch with Sarah at 1pm tomorrow" or "Team meeting at 3pm in conference room"'
@@ -1318,7 +1318,7 @@
 				<button
 					onclick={createEventFromNaturalLanguage}
 					disabled={!naturalLanguageInput.trim()}
-					class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+					class="flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
 				>
 					{language === 'english' ? 'Create Event' : 'நிகழ்வை உருவாக்கு'}
 				</button>

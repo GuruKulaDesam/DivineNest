@@ -1,5 +1,13 @@
 <script lang="ts">
 	let activeTab = $state('preferences');
+	import { currentBackgroundTheme, loadSavedTheme } from '$lib/stores/backgroundThemes';
+	import BackgroundThemeSelector from '$lib/components/BackgroundThemeSelector.svelte';
+	import { onMount } from 'svelte';
+
+	// Load saved background theme
+	onMount(() => {
+		loadSavedTheme();
+	});
 
 	const tabs = [
 		{ id: 'preferences', label: 'Preferences', icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>' },
@@ -125,7 +133,51 @@
 	<title>Settings - Divine Nest</title>
 </svelte:head>
 
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 pb-20">
+<div class="min-h-screen relative overflow-hidden p-4 pb-20">
+	<!-- Dynamic 3D Background Layers -->
+	<div class="absolute inset-0 opacity-50">
+		<!-- Primary gradient layer -->
+		<div class="absolute inset-0 bg-gradient-to-br {$currentBackgroundTheme.primaryGradient}"></div>
+		
+		<!-- Secondary depth layer -->
+		<div class="absolute inset-0 bg-gradient-to-tl {$currentBackgroundTheme.secondaryGradient}"></div>
+		
+		<!-- Floating geometric shapes -->
+		{#each $currentBackgroundTheme.floatingShapes as shape}
+			<div class="absolute {shape.position} {shape.size} bg-gradient-to-br {shape.colors} {shape.shape} {shape.animation}"></div>
+		{/each}
+		
+		<!-- Mesh overlay for 3D effect -->
+		<div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+		<div class="absolute inset-0 bg-gradient-to-tl from-transparent via-gray-100/3 to-transparent"></div>
+	</div>
+
+	<!-- Background Theme Selector -->
+	<BackgroundThemeSelector />
+	<!-- 3D Background Layers for Settings Page -->
+	<div class="absolute inset-0 opacity-50">
+		<!-- Primary settings gradient layer -->
+		<div class="absolute inset-0 bg-gradient-to-br from-slate-400/30 via-gray-500/20 to-zinc-500/30"></div>
+		
+		<!-- Secondary depth layer -->
+		<div class="absolute inset-0 bg-gradient-to-tl from-stone-600/20 via-neutral-400/15 to-gray-500/25"></div>
+		
+		<!-- Floating settings-themed shapes -->
+		<div class="absolute top-28 left-24 w-44 h-44 bg-gradient-to-br from-slate-300/35 to-gray-400/25 rounded-full blur-xl animate-float-slow"></div>
+		<div class="absolute top-56 right-32 w-36 h-36 bg-gradient-to-br from-zinc-300/30 to-stone-400/20 rounded-lg rotate-45 animate-float-medium"></div>
+		<div class="absolute bottom-56 left-28 w-52 h-52 bg-gradient-to-br from-gray-300/25 to-slate-400/15 rounded-full blur-lg animate-float-fast"></div>
+		<div class="absolute bottom-44 right-52 w-40 h-40 bg-gradient-to-br from-stone-300/35 to-zinc-400/25 rounded-xl rotate-12 animate-float-slow"></div>
+		<div class="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-br from-neutral-300/40 to-slate-400/30 rounded-full blur-sm animate-float-medium"></div>
+		<div class="absolute top-1/3 right-1/3 w-48 h-48 bg-gradient-to-br from-gray-300/30 to-stone-400/20 rounded-lg rotate-30 animate-float-fast"></div>
+		
+		<!-- Gear shapes for settings theme -->
+		<div class="absolute top-48 left-2/3 w-28 h-28 bg-gradient-to-br from-gray-400/40 to-slate-500/30 rounded-full blur-md animate-float-slow" style="clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+		<div class="absolute bottom-48 right-1/3 w-24 h-24 bg-gradient-to-br from-slate-400/35 to-gray-500/25 rounded-full blur-sm animate-float-medium" style="clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);"></div>
+		
+		<!-- Mesh overlay for 3D effect -->
+		<div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+		<div class="absolute inset-0 bg-gradient-to-tl from-transparent via-gray-100/3 to-transparent"></div>
+	</div>
 	<h1 class="text-2xl font-bold mb-6 text-gray-800">Settings</h1>
 
 	<!-- Tabs -->
@@ -498,5 +550,33 @@
 		background: rgba(255, 255, 255, 0.25);
 		backdrop-filter: blur(10px);
 		border: 1px solid rgba(255, 255, 255, 0.18);
+	}
+
+	/* 3D Floating Animations */
+	@keyframes float-slow {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-20px) rotate(5deg); }
+	}
+	
+	@keyframes float-medium {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-15px) rotate(-3deg); }
+	}
+	
+	@keyframes float-fast {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-25px) rotate(8deg); }
+	}
+	
+	.animate-float-slow {
+		animation: float-slow 6s ease-in-out infinite;
+	}
+	
+	.animate-float-medium {
+		animation: float-medium 4s ease-in-out infinite;
+	}
+	
+	.animate-float-fast {
+		animation: float-fast 3s ease-in-out infinite;
 	}
 </style>

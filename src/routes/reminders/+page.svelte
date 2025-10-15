@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { currentBackgroundTheme, loadSavedTheme } from '$lib/stores/backgroundThemes';
+	import BackgroundThemeSelector from '$lib/components/BackgroundThemeSelector.svelte';
 
 	let activeTab = $state('dashboard');
 	let selectedCategory = $state<string | null>(null);
@@ -18,8 +20,9 @@
 		nextTrigger?: Date;
 	}>>([]);
 
-	// Mock data for reminders
+	// Load saved background theme
 	onMount(() => {
+		loadSavedTheme();
 		reminders = [
 			{
 				id: '1',
@@ -170,7 +173,31 @@
 	<title>Reminders - Divine Nest</title>
 </svelte:head>
 
-<div class="min-h-screen p-4 pb-24">
+<div class="min-h-screen relative overflow-hidden p-4 pb-24">
+	<!-- 3D Background Layers for Reminders Page -->
+	<div class="absolute inset-0 opacity-50">
+		<!-- Primary notification gradient layer -->
+		<div class="absolute inset-0 bg-gradient-to-br from-yellow-400/30 via-orange-500/20 to-red-500/30"></div>
+		
+		<!-- Secondary depth layer -->
+		<div class="absolute inset-0 bg-gradient-to-tl from-amber-600/20 via-orange-400/15 to-pink-500/25"></div>
+		
+		<!-- Floating notification-themed shapes -->
+		<div class="absolute top-24 left-20 w-42 h-42 bg-gradient-to-br from-yellow-300/35 to-orange-400/25 rounded-full blur-xl animate-float-slow"></div>
+		<div class="absolute top-52 right-28 w-34 h-34 bg-gradient-to-br from-red-300/30 to-pink-400/20 rounded-lg rotate-45 animate-float-medium"></div>
+		<div class="absolute bottom-52 left-24 w-50 h-50 bg-gradient-to-br from-orange-300/25 to-red-400/15 rounded-full blur-lg animate-float-fast"></div>
+		<div class="absolute bottom-40 right-48 w-38 h-38 bg-gradient-to-br from-pink-300/35 to-orange-400/25 rounded-xl rotate-12 animate-float-slow"></div>
+		<div class="absolute top-1/2 left-1/3 w-30 h-30 bg-gradient-to-br from-amber-300/40 to-yellow-400/30 rounded-full blur-sm animate-float-medium"></div>
+		<div class="absolute top-1/3 right-1/3 w-46 h-46 bg-gradient-to-br from-red-300/30 to-pink-400/20 rounded-lg rotate-30 animate-float-fast"></div>
+		
+		<!-- Bell shapes for reminders theme -->
+		<div class="absolute top-44 left-2/3 w-26 h-26 bg-gradient-to-br from-orange-400/40 to-red-500/30 rounded-full blur-md animate-float-slow" style="clip-path: polygon(50% 0%, 80% 0%, 90% 20%, 90% 80%, 80% 100%, 20% 100%, 10% 80%, 10% 20%, 20% 0%);"></div>
+		<div class="absolute bottom-44 right-1/3 w-22 h-22 bg-gradient-to-br from-red-400/35 to-orange-500/25 rounded-full blur-sm animate-float-medium" style="clip-path: polygon(50% 0%, 80% 0%, 90% 20%, 90% 80%, 80% 100%, 20% 100%, 10% 80%, 10% 20%, 20% 0%);"></div>
+		
+		<!-- Mesh overlay for 3D effect -->
+		<div class="absolute inset-0 bg-gradient-to-br from-transparent via-white/5 to-transparent"></div>
+		<div class="absolute inset-0 bg-gradient-to-tl from-transparent via-orange-100/3 to-transparent"></div>
+	</div>
 	{#if selectedCategory}
 		<!-- Category Sub-page -->
 		<div class="max-w-7xl mx-auto">
@@ -385,3 +412,33 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	/* 3D Floating Animations */
+	@keyframes float-slow {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-20px) rotate(5deg); }
+	}
+	
+	@keyframes float-medium {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-15px) rotate(-3deg); }
+	}
+	
+	@keyframes float-fast {
+		0%, 100% { transform: translateY(0px) rotate(0deg); }
+		50% { transform: translateY(-25px) rotate(8deg); }
+	}
+	
+	.animate-float-slow {
+		animation: float-slow 6s ease-in-out infinite;
+	}
+	
+	.animate-float-medium {
+		animation: float-medium 4s ease-in-out infinite;
+	}
+	
+	.animate-float-fast {
+		animation: float-fast 3s ease-in-out infinite;
+	}
+</style>
