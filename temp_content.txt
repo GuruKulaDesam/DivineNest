@@ -1,0 +1,306 @@
+	{#if activeTab === 'profile'}
+		<div class="glass-card p-6 rounded-xl">
+			<h2 class="text-xl font-semibold mb-6">Personal Information</h2>
+
+			<form class="space-y-6" onsubmit={saveProfile}>
+				<!-- Basic Information -->
+				<div class="bg-white/50 p-4 rounded-lg">
+					<h3 class="font-semibold text-gray-800 mb-4">Basic Information</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+							<input
+								id="username"
+								type="text"
+								bind:value={profileData.username}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								required
+							/>
+						</div>
+						<div>
+							<label for="nickname" class="block text-sm font-medium text-gray-700 mb-1">Nickname</label>
+							<input
+								id="nickname"
+								type="text"
+								bind:value={profileData.nickname}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+							<input
+								id="email"
+								type="email"
+								bind:value={profileData.email}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label for="phoneNumber" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+							<input
+								id="phoneNumber"
+								type="tel"
+								bind:value={profileData.phoneNumber}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label for="role" class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+							<select
+								id="role"
+								bind:value={profileData.role}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							>
+								{#each userRoles as role}
+									<option value={role.value}>{role.label}</option>
+								{/each}
+							</select>
+						</div>
+						<div>
+							<label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+							<input
+								id="age"
+								type="number"
+								bind:value={profileData.age}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								min="1"
+								max="120"
+							/>
+						</div>
+						<div>
+							<label for="location" class="block text-sm font-medium text-gray-700 mb-1">Location</label>
+							<input
+								id="location"
+								type="text"
+								bind:value={profileData.location}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label for="timezone" class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+							<select
+								id="timezone"
+								bind:value={profileData.timezone}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							>
+								{#each timezones as tz}
+									<option value={tz.value}>{tz.label}</option>
+								{/each}
+							</select>
+						</div>
+						<div>
+							<label for="preferredLanguage" class="block text-sm font-medium text-gray-700 mb-1">Preferred Language</label>
+							<select
+								id="preferredLanguage"
+								bind:value={profileData.preferredLanguage}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							>
+								{#each languages as lang}
+									<option value={lang.value}>{lang.label}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+				</div>
+
+				<!-- Emergency Contact -->
+				<div class="bg-white/50 p-4 rounded-lg">
+					<h3 class="font-semibold text-gray-800 mb-4">Emergency Contact</h3>
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="emergencyContact" class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Name</label>
+							<input
+								id="emergencyContact"
+								type="text"
+								bind:value={profileData.emergencyContact}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+						<div>
+							<label for="emergencyContactPhone" class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact Phone</label>
+							<input
+								id="emergencyContactPhone"
+								type="tel"
+								bind:value={profileData.emergencyContactPhone}
+								class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+						</div>
+					</div>
+				</div>
+
+				<div class="flex justify-end">
+					<button
+						type="submit"
+						class="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					>
+						Save Profile
+					</button>
+				</div>
+			</form>
+		</div>
+
+	<!-- Modern Curved Bottom Navigation Bar -->
+	<div class="fixed bottom-0 left-0 right-0 z-40">
+		<!-- Curved background -->
+		<div class="relative">
+			<!-- Main curved container -->
+			<div class="bg-gradient-to-t from-white via-white to-white/95 backdrop-blur-xl shadow-2xl border-t border-white/20">
+				<!-- Curved top edge -->
+				<svg class="absolute top-0 left-0 w-full h-6" viewBox="0 0 400 24" preserveAspectRatio="none">
+					<path d="M0,24 Q200,0 400,24 L400,0 L0,0 Z" fill="white" opacity="0.9"/>
+				</svg>
+
+				<!-- Navigation items container -->
+				<div class="relative pt-6 pb-2 px-4">
+					<div class="flex items-end justify-center">
+						{@const isActive = activeTab === 'profile'}
+
+						<button
+							class="nav-item flex flex-col items-center justify-center transition-all duration-500 ease-out group relative scale-110"
+							onclick={() => activeTab = 'profile'}
+							aria-label="Profile"
+						>
+							<!-- Icon container with enhanced styling -->
+							<div class="relative z-10 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-300 bg-gradient-to-br from-blue-500 to-blue-600 shadow-xl shadow-blue-500/30">
+								<!-- Ripple effect -->
+								<div class="absolute inset-0 rounded-full bg-current opacity-0 group-active:opacity-20 transition-opacity duration-150"></div>
+
+								<!-- Icon -->
+								<img src="/icon-profile.svg" alt="Profile" class="w-6 h-6 relative z-10 filter brightness-0 invert" />
+							</div>
+
+							<!-- Label with enhanced styling -->
+							<span class="text-sm font-semibold mt-2 transition-all duration-300 text-blue-600">
+								Profile
+							</span>
+
+							<!-- Enhanced active indicator -->
+							<div class="w-6 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mt-1 animate-fadeIn shadow-lg shadow-blue-500/50"></div>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modern Android Snack Bar -->
+	{#if isSnackBarVisible}
+		<div class="fixed bottom-20 left-4 right-4 z-50 animate-slideUp">
+			<div class="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-2xl border border-gray-700 flex items-center space-x-3">
+				<div class="flex-shrink-0">
+					{#if snackBarType === 'success'}
+						<svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+					{:else if snackBarType === 'error'}
+						<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+					{:else}
+						<svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+					{/if}
+				</div>
+				<div class="flex-1 text-sm font-medium">
+					{snackBarMessage}
+				</div>
+				<button
+					class="flex-shrink-0 text-gray-400 hover:text-white transition-colors"
+					onclick={() => isSnackBarVisible = false}
+					aria-label="Close"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+			</div>
+		</div>
+	{/if}
+		<div class="flex items-center justify-between px-4 py-3">
+			<!-- Left Section with Logo and Greeting -->
+			<div class="flex items-center space-x-4">
+				<!-- Divine Nest Logo -->
+				<div class="flex items-center space-x-2">
+					<img
+						src="/Divine_Nest_Logo_Light.png"
+						alt="Divine Nest Logo"
+						class="w-8 h-8 object-contain"
+					/>
+					<div class="flex flex-col">
+						<span class="text-xs text-gray-500 uppercase tracking-wide">Welcome back</span>
+						<span class="text-sm font-semibold text-gray-700">
+							{profileData.nickname || profileData.username || 'Family Member'}
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Center Section - Dynamic Seek Bar -->
+			<div class="flex-1 max-w-xs mx-4">
+				<div class="flex items-center space-x-3">
+					<svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+					</svg>
+					<div class="flex-1 relative">
+						<input
+							type="range"
+							min="0"
+							max="100"
+							bind:value={volumeLevel}
+							oninput={handleSeekBarChange}
+							class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+						/>
+						<div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-600 font-medium">
+							{volumeLevel}%
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Right Section -->
+			<div class="flex items-center space-x-2">
+				<button
+					class="p-2 rounded-xl bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300 border border-green-200/50 shadow-sm"
+					onclick={() => showSnackBar('Settings synchronized!', 'success')}
+					aria-label="Sync"
+				>
+					<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+					</svg>
+				</button>
+				<button
+					class="p-2 rounded-xl bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300 border border-purple-200/50 shadow-sm"
+					onclick={() => showSnackBar('Help & Support', 'info')}
+					aria-label="Help"
+				>
+					<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+				</button>
+			</div>
+		</div>
+
+		<!-- Expandable Top Nav Menu -->
+		{#if topNavExpanded}
+			<div class="bg-white/95 backdrop-blur-xl border-t border-white/20 px-4 py-3 animate-slideDown">
+				<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+					{#each tabs as tab}
+						<button
+							class="flex items-center space-x-3 p-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all duration-300 border border-gray-200/50 shadow-sm {activeTab === tab.id ? 'ring-2 ring-blue-500 bg-blue-50' : ''}"
+							onclick={() => {
+								activeTab = tab.id;
+								topNavExpanded = false;
+							}}
+						>
+							<div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+								<span class="text-blue-600 text-sm">📱</span>
+							</div>
+							<div class="text-left">
+								<div class="text-sm font-semibold text-gray-800">{tab.label}</div>
+								<div class="text-xs text-gray-500">Configure settings</div>
+							</div>
+						</button>
+					{/each}
+				</div>
+			</div>
