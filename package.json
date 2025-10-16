@@ -15,10 +15,11 @@
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright test",
-		"db:push": "drizzle-kit push",
-		"db:generate": "drizzle-kit generate",
-		"db:migrate": "drizzle-kit migrate",
+		"db:push": "prisma db push",
+		"db:generate": "prisma generate",
+		"db:migrate": "prisma migrate dev",
 		"db:seed": "tsx src/lib/server/seed.ts",
+		"db:seed-new": "tsx src/lib/server/seed-new-tables.ts",
 		"storybook": "storybook dev -p 6006",
 		"build-storybook": "storybook build"
 	},
@@ -27,7 +28,6 @@
 		"@eslint/compat": "^1.4.0",
 		"@eslint/js": "^9.36.0",
 		"@inlang/paraglide-js": "^2.3.2",
-		"@libsql/client": "^0.15.15",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
 		"@playwright/test": "^1.55.1",
@@ -44,8 +44,6 @@
 		"@tailwindcss/vite": "^4.1.13",
 		"@types/node": "^22",
 		"@vitest/browser": "^3.2.4",
-		"drizzle-kit": "^0.31.4",
-		"drizzle-orm": "^0.44.5",
 		"eslint": "^9.36.0",
 		"eslint-config-prettier": "^10.1.8",
 		"eslint-plugin-storybook": "^9.1.10",
@@ -76,8 +74,11 @@
 		"@capacitor/cli": "^7.4.3",
 		"@capacitor/core": "^7.4.3",
 		"@node-rs/argon2": "^2.0.2",
+		"@prisma/client": "^6.17.1",
 		"@sveltejs/adapter-static": "^3.0.10",
+		"better-sqlite3": "^12.4.1",
 		"lucide-svelte": "^0.545.0",
-		"openai": "^6.3.0"
+		"openai": "^6.3.0",
+		"prisma": "^6.17.1"
 	}
 }

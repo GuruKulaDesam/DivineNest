@@ -1,0 +1,737 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ===== USER MANAGEMENT SYSTEM =====
+model User {
+  id           String   @id
+  username     String   @unique
+  passwordHash String
+  role         String   // Child, Parent, Relative, Visitor, Admin
+  nickname     String?
+  email        String?
+  joinedDate   DateTime
+  isActive     Boolean  @default(true)
+
+  // Relations
+  sessions Session[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String @id
+  userId    String
+  expiresAt DateTime
+
+  // Relations
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("session")
+}
+
+// ===== DUTIES MANAGEMENT SYSTEM =====
+
+// Duty Types
+model DutyType {
+  code             String @id
+  label            String
+  vedicTheme       String?
+  colorTag         String?
+  icon             String?
+  karmaPointRange  String?
+
+  // Relations
+  duties Duty[]
+
+  @@map("duty_types")
+}
+
+// Duty Types Lookup
+model DutyTypesLookup {
+  id             Int    @id
+  dutyTypeTitle  String
+  description    String
+
+  // Relations
+  duties Duty[]
+
+  @@map("duty_types_lookup")
+}
+
+// Responsibility Types Lookup
+model ResponsibilityTypesLookup {
+  id                      Int    @id
+  responsibilityTypeTitle String
+  description             String
+
+  // Relations
+  responsibilities Responsibility[]
+
+  @@map("responsibility_types_lookup")
+}
+
+// Duties
+model Duty {
+  id          Int      @id @default(autoincrement())
+  dutyCode    String
+  title       String
+  description String?
+  role        String
+  frequency   String
+  karmaPoints Int?
+  lifeStage   String?
+  dutyTypeId  Int?
+  virtueIds   String?
+  sourceText  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relations
+  dutyType    DutyType?             @relation(fields: [dutyCode], references: [code])
+  dutyTypeLookup DutyTypesLookup?   @relation(fields: [dutyTypeId], references: [id])
+  responsibilities Responsibility[]
+
+  @@map("duties")
+}
+
+// Responsibilities
+model Responsibility {
+  id                   Int      @id @default(autoincrement())
+  dutyId               Int
+  responsibilityTitle  String
+  role                 String
+  frequency            String
+  karmaPoints          Int
+  emotionalTone        String
+  viceAvoided          String
+  responsibilityTypeId Int?
+  virtueIds            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  // Relations
+  duty Duty @relation(fields: [dutyId], references: [id])
+  responsibilityTypeLookup ResponsibilityTypesLookup? @relation(fields: [responsibilityTypeId], references: [id])
+
+  @@map("responsibilities")
+}
+
+// ===== VIRTUES SYSTEM =====
+model Virtue {
+  id                   Int      @id @default(autoincrement())
+  virtueName           String
+  virtueType           String   // Moral, Spiritual, Domestic, Social, Environmental
+  virtueCategory       String   // Inner Discipline, Service, Family, Nature, Universal, etc.
+  virtueStage          String   // All, Youth, Elder, Householder
+  karmaPoints          Int
+  viceAvoided          String?
+  sourceText           String?
+  sourceType           String?  // Tamil Classical, Vedic, Folk, Agamic
+  description          String?
+  isRenunciative       Boolean  @default(false)
+  isDebtClearing       Boolean  @default(false)
+  isSociallyVisible    Boolean  @default(false)
+  recommendedRoles     String?  // Comma-separated roles
+  recommendedFrequency String?  // Daily, Weekly, Monthly, etc.
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  // Relations
+  dutyVirtues DutyVirtue[]
+
+  @@map("virtues")
+}
+
+// ===== DUTIES-VIRTUES LINKING SYSTEM =====
+model DutyVirtue {
+  id          Int      @id @default(autoincrement())
+  virtueId    Int
+  dutyTitle   String
+  karmaPoints Int
+  role        String
+  frequency   String
+  lifeStage   String
+  sourceText  String?
+  viceAvoided String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relations
+  virtue Virtue @relation(fields: [virtueId], references: [id])
+
+  @@map("duties_virtue")
+}
+
+// ===== EMERGENCIES SYSTEM =====
+model Emergency {
+  id               Int         @id @default(autoincrement())
+  issueType        String      // "Emergency"
+  description      String
+  preventiveAction String
+  role             String
+  urgencyLevel     String      // Immediate, High, Critical
+  lifeStage        String      // Youth, Elder, Householder, All
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
+
+  // Relations
+
+  @@map("emergencies")
+}
+
+// ===== ISSUES SYSTEM =====
+model Issue {
+  id               Int         @id @default(autoincrement())
+  issueType        String      // Urgent, Repair, Maintenance, Upgrade, Cultural Displacement, Emotional Freeze, Ambiguity, Role Drift, Neglect, Cognitive Overload, Event
+  description      String
+  preventiveAction String
+  role             String
+  urgencyLevel     String      // Low, Medium, High
+  lifeStage        String      // Youth, Elder, Householder, All
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
+
+  // Relations
+  emergencies  IssuesEmergency[]
+  urgents      IssuesUrgent[]
+  repairs      IssuesRepair[]
+  maintenances IssuesMaintenance[]
+  upgrades     IssuesUpgrade[]
+  conflicts    IssuesConflict[]
+  habits       IssuesHabit[]
+
+  @@map("issues")
+}
+
+// ===== STARTER RESPONSIBILITIES SYSTEM =====
+model StarterResponsibility {
+  responsibilityId     Int     @id
+  description          String
+  virtueIds            String  // JSON array of virtue IDs, e.g., "[33,44]"
+  linkedVirtueTitles   String
+  role                 String
+  lifeStage            String
+  urgencyLevel         String  // Low, Medium, High
+  frequency            String  // Daily, Weekly, Monthly, Event-Based
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @default(now()) @updatedAt
+
+  @@map("starter_responsibilities")
+}
+
+// ===== COMMUNICATION SYSTEM =====
+model Communication {
+  id             String   @id
+  type           String   // Messages, Wish Lists, Suggestions, Discussions, Decisions
+  category       String
+  status         String   // Open, In Progress, Resolved
+  priority       String   // Low, Medium, High
+  applicableRole String   // All, Parents, Children
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  messages       CommunicationMessage[]
+  wishLists      CommunicationWishList[]
+  suggestions    CommunicationSuggestion[]
+  discussions    CommunicationDiscussion[]
+  decisions      CommunicationDecision[]
+
+  @@map("communication")
+}
+
+model CommunicationMessage {
+  id             String   @id
+  communicationId String
+  sender         String
+  recipient      String
+  message        String
+  messageType    String   // Text, Voice, Image
+  readStatus     Boolean  @default(false)
+  sentAt         DateTime
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id])
+
+  @@map("communication_messages")
+}
+
+model CommunicationWishList {
+  id               String @id
+  communicationId  String
+  item             String
+  category         String
+  priority         String // High, Medium, Low
+  estimatedCost    Float?
+  requestedBy      String
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id])
+
+  @@map("communication_wish_lists")
+}
+
+model CommunicationSuggestion {
+  id              String  @id
+  communicationId String
+  suggestion      String
+  category        String
+  impact          String  // High, Medium, Low
+  proposedBy      String
+  votes           Int     @default(0)
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id])
+
+  @@map("communication_suggestions")
+}
+
+model CommunicationDiscussion {
+  id             String   @id
+  communicationId String
+  topic          String
+  participants   String   // JSON array of user IDs
+  status         String   // Open, Closed
+  lastActivity   DateTime
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id])
+
+  @@map("communication_discussions")
+}
+
+model CommunicationDecision {
+  id               String  @id
+  communicationId  String
+  decision         String
+  context          String
+  outcome          String
+  affectedParties  String  // JSON array of user IDs
+  implemented      Boolean @default(false)
+
+  // Relations
+  communication Communication @relation(fields: [communicationId], references: [id])
+
+  @@map("communication_decisions")
+}
+
+// ===== LEARNING SYSTEM =====
+model Learning {
+  id               String   @id
+  type             String   // Lessons, Courses, Teaching Logs, Study Materials, Exams
+  category         String
+  level            String   // Beginner, Intermediate, Advanced, All
+  duration         String
+  applicableRole   String   // Children, Parents, Family
+  createdBy        String
+  createdAt        DateTime @default(now())
+
+  // Relations
+  lessons          LearningLesson[]
+  courses          LearningCourse[]
+  teachingLogs     LearningTeachingLog[]
+  studyMaterials   LearningStudyMaterial[]
+  exams            LearningExam[]
+
+  @@map("learning")
+}
+
+model LearningLesson {
+  id          String @id
+  learningId  String
+  lessonTitle String
+  subject     String
+  objectives  String // JSON array
+  materials   String // JSON array
+  duration    Int    // in minutes
+  completed   Boolean @default(false)
+
+  // Relations
+  learning Learning @relation(fields: [learningId], references: [id])
+
+  @@map("learning_lessons")
+}
+
+model LearningCourse {
+  id             String   @id
+  learningId     String
+  courseName     String
+  provider       String
+  platform       String   // Online, Offline, Hybrid
+  certification  Boolean  @default(false)
+  completionDate DateTime?
+
+  // Relations
+  learning Learning @relation(fields: [learningId], references: [id])
+
+  @@map("learning_courses")
+}
+
+model LearningTeachingLog {
+  id        String   @id
+  learningId String
+  teacher   String
+  student   String
+  subject   String
+  duration  Int      // in minutes
+  notes     String?
+  date      DateTime
+
+  // Relations
+  learning Learning @relation(fields: [learningId], references: [id])
+
+  @@map("learning_teaching_logs")
+}
+
+model LearningStudyMaterial {
+  id          String  @id
+  learningId  String
+  materialType String // Book, Video, Document, Audio
+  title       String
+  author      String?
+  source      String
+  accessLink  String?
+  difficulty  String  // Beginner, Intermediate, Advanced
+
+  // Relations
+  learning Learning @relation(fields: [learningId], references: [id])
+
+  @@map("learning_study_materials")
+}
+
+model LearningExam {
+  id         String   @id
+  learningId String
+  examName   String
+  subject    String
+  date       DateTime
+  score      Float?
+  maxScore   Float
+  grade      String?
+  certification Boolean @default(false)
+
+  // Relations
+  learning Learning @relation(fields: [learningId], references: [id])
+
+  @@map("learning_exams")
+}
+
+// ===== LEARNING DUTIES SYSTEM =====
+model LearningDuty {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  category    String   // Art Forms, Skills, Knowledge Areas
+  vedicSource String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Relations
+  artForms ArtForm[]
+
+  @@map("learning_duties")
+}
+
+model ArtForm {
+  id             Int      @id @default(autoincrement())
+  learningDutyId Int
+  artId          Int      @unique // Canonical art form ID (1-64)
+  artTitle       String
+  tamilName      String?  // Tamil name of the art form
+  description    String?
+  virtueIds      String   // JSON array of virtue IDs
+  virtueWeights  String?  // JSON array of virtue weights
+  dutyType       String   // Ritual, Emotional, Festival, Daily, Logistical
+  lifeStage      String   // Youth, Householder, Elder, All
+  frequency      String   // Weekly, Monthly, Festival, Quarterly
+  frequencyBonus Int?     // Bonus karma points for frequency
+  cosmicLayer    String?  // Nāda, Bhava, Jyoti, Kriya, Rūpa
+  domain         String?  // Soul, Mind, Spirit, Body, Mixed
+  multiplier     Float?   // Karma multiplier
+  karmaPoints    Int
+  roleTags       String?  // JSON array of role tag IDs (e.g., ["F1", "F4", "F6"])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now()) @updatedAt
+
+  // Relations
+  learningDuty LearningDuty @relation(fields: [learningDutyId], references: [id])
+
+  @@map("art_forms")
+}
+
+// ===== ROLE TAGS SYSTEM =====
+model RoleTag {
+  id          String @id // Role ID like "F1", "F2", etc.
+  englishName String
+  tamilName   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("role_tags")
+}
+
+// ===== ISSUES SYSTEM EXTENSIONS =====
+model IssuesEmergency {
+  id               String @id
+  issueId          Int
+  emergencyType    String
+  severity         String // High, Medium, Low
+  responseTime     String
+  emergencyContacts String // JSON array
+  backupPlan       String?
+  status           String
+  lastUpdated      DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_emergency")
+}
+
+model IssuesUrgent {
+  id           String  @id
+  issueId      Int
+  urgentType   String
+  deadline     DateTime
+  impact       String
+  stakeholders String  // JSON array
+  actionPlan   String
+  status       String
+  lastUpdated  DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_urgents")
+}
+
+model IssuesRepair {
+  id            String  @id
+  issueId       Int
+  item          String
+  damage        String
+  repairType    String
+  estimatedCost Float?
+  contractor    String?
+  parts         String? // JSON array
+  status        String
+  lastUpdated   DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_repairs")
+}
+
+model IssuesMaintenance {
+  id             String  @id
+  issueId        Int
+  system         String
+  maintenanceType String
+  schedule       String
+  contractor     String?
+  cost           Float?
+  lastService    DateTime?
+  nextService    DateTime?
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_maintenance")
+}
+
+model IssuesUpgrade {
+  id          String @id
+  issueId     Int
+  upgradeType String
+  benefit     String
+  roi         String
+  budget      Float?
+  timeline    String?
+  status      String
+  lastUpdated DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_upgrades")
+}
+
+model IssuesConflict {
+  id           String  @id
+  issueId      Int
+  conflictType String
+  parties     String // JSON array
+  description String
+  impact      String
+  resolution  String?
+  mediator    String?
+  status      String
+  lastUpdated DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_conflicts")
+}
+
+model IssuesHabit {
+  id        String @id
+  issueId   Int
+  habitType   String // Positive, Negative
+  description String
+  triggers    String? // JSON array
+  consequences String
+  strategy    String
+  progress    String
+  lastUpdated DateTime
+
+  // Relations
+  issue Issue @relation(fields: [issueId], references: [id])
+
+  @@map("issues_habits")
+}
+
+// ===== WELLNESS SYSTEM =====
+model Wellness {
+  id             String   @id
+  type           String   // Physical Health Logs, Mental Health Logs, Medicines Tracker, Appointments, Remedies
+  category       String
+  severity       String   // High, Medium, Low
+  frequency      String
+  applicableRole String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  physicalHealthLogs WellnessPhysicalHealth[]
+
+  @@map("wellness")
+}
+
+model WellnessPhysicalHealth {
+  id       String   @id
+  wellnessId String
+  activity String
+  duration Int      // in minutes
+  intensity String  // High, Medium, Low
+  vitals   String?  // JSON object with heart_rate, steps, etc.
+  notes    String?
+  date     DateTime
+
+  // Relations
+  wellness Wellness @relation(fields: [wellnessId], references: [id])
+
+  @@map("wellness_physical_health")
+}
+
+// ===== KARMA SYSTEM =====
+model Karma {
+  id             String   @id
+  type           String   // Karma Log, Karma Score, Karma Penalty, Karma Rewards
+  category       String
+  points         Int
+  reason         String
+  linkedDuty     String?  // optional reference to duty
+  linkedAchievement String? // optional reference to achievement
+  role           String
+  applicableRole String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("karma")
+}
+
+// ===== GUESTS SYSTEM =====
+model Guest {
+  id             String   @id
+  type           String   // Family, Friends, Relatives, Visitors, Officials
+  category       String
+  visitPurpose   String
+  expectedArrival DateTime?
+  expectedDeparture DateTime?
+  actualArrival  DateTime?
+  actualDeparture DateTime?
+  specialNeeds   String?
+  giftGiven      String?
+  giftReceived   String?
+  notes          String?
+  applicableRole String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("guests")
+}
+
+// ===== ENVIRONMENT SYSTEM =====
+model Environment {
+  id                  String   @id
+  type                String   // Home, Garden, Community, Temple, Work
+  category            String
+  condition           String   // Excellent, Good, Fair, Poor
+  maintenanceSchedule String?
+  lastMaintenance     DateTime?
+  nextMaintenance     DateTime?
+  responsiblePerson   String?
+  cost                Float?
+  applicableRole      String
+  createdBy           String
+  createdAt           DateTime @default(now())
+
+  @@map("environment")
+}
+
+// ===== FINANCE SYSTEM =====
+model Finance {
+  id             String   @id
+  type           String   // Income, Expense
+  category       String
+  amount         Float
+  date           DateTime
+  actor          String
+  applicableRole String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("finance")
+}
+
+// ===== FOOD SYSTEM =====
+model Food {
+  id             String   @id
+  type           String   // Breakfast, Lunch, Dinner, Snacks, Festival
+  category       String
+  healthFactor   String
+  time           String
+  cost           Float?
+  applicableRole String
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("foods")
+}
+
+// ===== INVENTORY SYSTEM =====
+model Inventory {
+  id             String   @id
+  type           String   // Ingredients, Spices, Grocery, Medicines, Toiletries, Stationery, Ritual, Books
+  category       String
+  quantity       Float
+  unit           String
+  location       String
+  applicableRole String
+  expiryDate     DateTime?
+  createdBy      String
+  createdAt      DateTime @default(now())
+
+  @@map("inventory")
+}

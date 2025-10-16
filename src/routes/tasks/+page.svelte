@@ -9,9 +9,9 @@
 	export let data: PageData;
 	export let form: ActionData;
 
-	let tasks: any[] = data.tasks || [];
-	let projectsList: any[] = data.projects || [];
-	let labels: any[] = data.labels || [];
+	let tasks: any[] = data.duties || [];
+	let projectsList: any[] = [];
+	let labels: any[] = [];
 	let showAddTaskModal = false;
 	let showAddProjectModal = false;
 	let showAddLabelModal = false;

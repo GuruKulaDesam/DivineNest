@@ -1,116 +1,40 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
+
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
 
 	let activeTab = $state('dashboard');
 	let selectedCategory = $state<string | null>(null);
-	let duties = $state<Array<{
-		id: string;
-		type: string;
-		category: string;
-		subCategory: string;
-		frequency: string;
-		status: string;
-		assignedTo: string;
-		priority: 'Low' | 'Medium' | 'High' | 'Critical';
-		description: string;
-		createdAt: Date;
-		dueDate?: Date;
-	}>>([]);
 
-	// Mock data for duties
-	onMount(() => {
-		duties = [
-			{
-				id: '1',
-				type: 'Duty',
-				category: 'Household',
-				subCategory: 'Cleaning',
-				frequency: 'Daily',
-				status: 'Pending',
-				assignedTo: 'Mother',
-				priority: 'Medium',
-				description: 'Clean kitchen and dining area',
-				createdAt: new Date('2025-10-15'),
-				dueDate: new Date('2025-10-15')
-			},
-			{
-				id: '2',
-				type: 'Ritual',
-				category: 'Spiritual',
-				subCategory: 'Sandhyavandanam',
-				frequency: 'Daily',
-				status: 'Completed',
-				assignedTo: 'Father',
-				priority: 'High',
-				description: 'Morning and evening prayers',
-				createdAt: new Date('2025-10-14'),
-				dueDate: new Date('2025-10-14')
-			},
-			{
-				id: '3',
-				type: 'Duty',
-				category: 'Education',
-				subCategory: 'Homework',
-				frequency: 'Daily',
-				status: 'In Progress',
-				assignedTo: 'Son',
-				priority: 'High',
-				description: 'Complete mathematics homework',
-				createdAt: new Date('2025-10-13'),
-				dueDate: new Date('2025-10-13')
-			},
-			{
-				id: '4',
-				type: 'Duty',
-				category: 'Health',
-				subCategory: 'Exercise',
-				frequency: 'Weekly',
-				status: 'Pending',
-				assignedTo: 'Family',
-				priority: 'Medium',
-				description: 'Family yoga session',
-				createdAt: new Date('2025-10-12'),
-				dueDate: new Date('2025-10-16')
-			},
-			{
-				id: '5',
-				type: 'Duty',
-				category: 'Parenting',
-				subCategory: 'Guidance',
-				frequency: 'Daily',
-				status: 'Completed',
-				assignedTo: 'Parents',
-				priority: 'High',
-				description: 'Daily moral guidance and values teaching',
-				createdAt: new Date('2025-10-11'),
-				dueDate: new Date('2025-10-11')
-			}
-		];
-	});
+	// Use real data from server load
+	let dutyTypes = $derived(data.dutyTypes);
+	let duties = $derived(data.duties);
+	let responsibilitiesByType = $derived(data.responsibilitiesByType);
 
 	// KPI calculations
 	const totalDuties = $derived(duties.length);
-	const completedDuties = $derived(duties.filter(d => d.status === 'Completed').length);
-	const pendingDuties = $derived(duties.filter(d => d.status === 'Pending').length);
-	const inProgressDuties = $derived(duties.filter(d => d.status === 'In Progress').length);
-	const completionRate = $derived(totalDuties > 0 ? Math.round((completedDuties / totalDuties) * 100) : 0);
+	const totalResponsibilities = $derived(Object.values(responsibilitiesByType).flat().length);
+	const completedResponsibilities = $derived(Object.values(responsibilitiesByType).flat().filter(r => r.status === 'completed').length);
+	const pendingResponsibilities = $derived(Object.values(responsibilitiesByType).flat().filter(r => r.status === 'pending').length);
+	const completionRate = $derived(totalResponsibilities > 0 ? Math.round((completedResponsibilities / totalResponsibilities) * 100) : 0);
 
-	// Group duties by category for child tables
-	const dutiesByCategory = $derived(duties.reduce((acc, duty) => {
-		if (!acc[duty.category]) acc[duty.category] = [];
-		acc[duty.category].push(duty);
+	// Group duties by type for display
+	const dutiesByType = $derived(duties.reduce((acc, duty) => {
+		if (!acc[duty.dutyType.code]) acc[duty.dutyType.code] = [];
+		acc[duty.dutyType.code].push(duty);
 		return acc;
 	}, {} as Record<string, typeof duties>));
 
-	const categories = [
-		{ id: 'self', name: 'Self', icon: '👤', color: 'from-blue-500 to-blue-700' },
-		{ id: 'family', name: 'Family', icon: '👨‍👩‍👧‍👦', color: 'from-green-500 to-green-700' },
-		{ id: 'parenting', name: 'Parenting', icon: '👶', color: 'from-purple-500 to-purple-700' },
-		{ id: 'education', name: 'Education', icon: '📚', color: 'from-indigo-500 to-indigo-700' },
-		{ id: 'health', name: 'Health', icon: '🏥', color: 'from-red-500 to-red-700' },
-		{ id: 'household', name: 'Household', icon: '🏠', color: 'from-orange-500 to-orange-700' },
-		{ id: 'spiritual', name: 'Spiritual', icon: '🙏', color: 'from-pink-500 to-pink-700' }
-	];
+	const categories = $derived(dutyTypes.map(type => ({
+		id: type.code,
+		name: type.label,
+		icon: '🕉️', // Default icon for all Vedic duties
+		color: 'from-orange-500 to-red-700' // Default color
+	})));
 
 	const tabs = [
 		{ id: 'dashboard', label: 'Dashboard', icon: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>' },
@@ -122,7 +46,7 @@
 	function getStatusColor(status: string) {
 		switch (status) {
 			case 'Completed': return 'text-green-600 bg-green-100';
-			case 'In Progress': return 'text-blue-600 bg-blue-100';
+			case 'Active': return 'text-blue-600 bg-blue-100';
 			case 'Pending': return 'text-orange-600 bg-orange-100';
 			default: return 'text-gray-600 bg-gray-100';
 		}
@@ -130,19 +54,9 @@
 
 	function getPriorityColor(priority: string) {
 		switch (priority) {
-			case 'Critical': return 'text-red-600 bg-red-100';
-			case 'High': return 'text-orange-600 bg-orange-100';
-			case 'Medium': return 'text-yellow-600 bg-yellow-100';
+			case 'High': return 'text-red-600 bg-red-100';
+			case 'Medium': return 'text-orange-600 bg-orange-100';
 			case 'Low': return 'text-green-600 bg-green-100';
-			default: return 'text-gray-600 bg-gray-100';
-		}
-	}
-
-	function getFrequencyColor(frequency: string) {
-		switch (frequency) {
-			case 'Daily': return 'text-blue-600 bg-blue-100';
-			case 'Weekly': return 'text-green-600 bg-green-100';
-			case 'Monthly': return 'text-purple-600 bg-purple-100';
 			default: return 'text-gray-600 bg-gray-100';
 		}
 	}
@@ -175,49 +89,46 @@
 			</div>
 
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-				{#each dutiesByCategory[categories.find(c => c.id === selectedCategory)?.name || ''] || [] as duty}
+				{#each dutiesByType[selectedCategory] || [] as duty}
 					<div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-200 hover:scale-105">
 						<div class="flex items-start justify-between mb-4">
 							<div class="flex items-center space-x-3">
 								<div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-									<span class="text-white font-semibold text-sm">{duty.subCategory.charAt(0)}</span>
+									<span class="text-white font-semibold text-sm">{duty.title.charAt(0)}</span>
 								</div>
 								<div>
-									<h3 class="font-semibold text-gray-900">{duty.subCategory}</h3>
-									<p class="text-sm text-gray-500">{duty.type}</p>
+									<h3 class="font-semibold text-gray-900">{duty.title}</h3>
+									<p class="text-sm text-gray-500">{duty.role}</p>
 								</div>
 							</div>
-							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getPriorityColor(duty.priority)}">
-								{duty.priority}
+							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+								{duty.frequency}
 							</span>
 						</div>
 
-						<p class="text-gray-700 mb-4 text-sm">{duty.description}</p>
+						{#if duty.description}
+							<p class="text-gray-700 mb-4 text-sm">{duty.description}</p>
+						{/if}
 
 						<div class="space-y-2 mb-4">
-							<div class="flex justify-between text-sm">
-								<span class="text-gray-500">Frequency:</span>
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getFrequencyColor(duty.frequency)}">
-									{duty.frequency}
-								</span>
-							</div>
-							<div class="flex justify-between text-sm">
-								<span class="text-gray-500">Assigned:</span>
-								<span class="font-medium">{duty.assignedTo}</span>
-							</div>
-							{#if duty.dueDate}
-								<div class="flex justify-between text-sm">
-									<span class="text-gray-500">Due:</span>
-									<span class="font-medium text-blue-600">{duty.dueDate.toLocaleDateString()}</span>
+							<h4 class="font-medium text-gray-900 text-sm">பொறுப்புகள் (Responsibilities):</h4>
+							{#each duty.responsibilities as responsibility}
+								<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+									<div class="flex-1">
+										<p class="text-sm font-medium text-gray-900">{responsibility.activity}</p>
+										{#if responsibility.description}
+											<p class="text-xs text-gray-600">{responsibility.description}</p>
+										{/if}
+									</div>
+									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusColor(responsibility.status)}">
+										{responsibility.status}
+									</span>
 								</div>
-							{/if}
+							{/each}
 						</div>
 
-						<div class="flex items-center justify-between">
-							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusColor(duty.status)}">
-								{duty.status}
-							</span>
-							<span class="text-xs text-gray-500">{duty.createdAt.toLocaleDateString()}</span>
+						<div class="text-xs text-gray-500">
+							Created: {duty.createdAt.toLocaleDateString()}
 						</div>
 					</div>
 				{/each}
@@ -239,11 +150,11 @@
 						</div>
 						<div class="flex items-center space-x-2">
 							<div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-							<span>{inProgressDuties} In Progress</span>
+							<span>{totalResponsibilities} Responsibilities</span>
 						</div>
 						<div class="flex items-center space-x-2">
 							<div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
-							<span>{pendingDuties} Pending</span>
+							<span>{completionRate}% Complete</span>
 						</div>
 					</div>
 				</div>
@@ -258,7 +169,7 @@
 						<div>
 							<p class="text-sm font-medium text-gray-600 mb-1">Total Duties</p>
 							<p class="text-3xl font-bold text-blue-600">{totalDuties}</p>
-							<p class="text-xs text-gray-500 mt-1">All time</p>
+							<p class="text-xs text-gray-500 mt-1">Across {dutyTypes.length} categories</p>
 						</div>
 						<div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
 							<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,9 +182,9 @@
 				<div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-600 mb-1">Completed</p>
-							<p class="text-3xl font-bold text-green-600">{completedDuties}</p>
-							<p class="text-xs text-gray-500 mt-1">{completionRate}% completion rate</p>
+							<p class="text-sm font-medium text-gray-600 mb-1">Responsibilities</p>
+							<p class="text-3xl font-bold text-green-600">{totalResponsibilities}</p>
+							<p class="text-xs text-gray-500 mt-1">{completedResponsibilities} completed</p>
 						</div>
 						<div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
 							<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,9 +197,9 @@
 				<div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-600 mb-1">In Progress</p>
-							<p class="text-3xl font-bold text-orange-600">{inProgressDuties}</p>
-							<p class="text-xs text-gray-500 mt-1">Active duties</p>
+							<p class="text-sm font-medium text-gray-600 mb-1">Completion Rate</p>
+							<p class="text-3xl font-bold text-orange-600">{completionRate}%</p>
+							<p class="text-xs text-gray-500 mt-1">{pendingResponsibilities} pending</p>
 						</div>
 						<div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
 							<svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,9 +212,9 @@
 				<div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow">
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-600 mb-1">Pending</p>
-							<p class="text-3xl font-bold text-red-600">{pendingDuties}</p>
-							<p class="text-xs text-gray-500 mt-1">Awaiting action</p>
+							<p class="text-sm font-medium text-gray-600 mb-1">Duty Types</p>
+							<p class="text-3xl font-bold text-red-600">{dutyTypes.length}</p>
+							<p class="text-xs text-gray-500 mt-1">Vedic categories</p>
 						</div>
 						<div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
 							<svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,10 +238,10 @@
 							<div class="relative z-10">
 								<div class="text-3xl mb-3">{category.icon}</div>
 								<h3 class="font-semibold text-lg mb-1">{category.name}</h3>
-								<p class="text-sm opacity-90">{dutiesByCategory[category.name]?.length || 0} duties</p>
+								<p class="text-sm opacity-90">{dutiesByType[category.id]?.length || 0} duties</p>
 							</div>
 							<div class="absolute -top-2 -right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-								<span class="text-xs font-bold">{dutiesByCategory[category.name]?.length || 0}</span>
+								<span class="text-xs font-bold">{dutiesByType[category.id]?.length || 0}</span>
 							</div>
 						</button>
 					{/each}
@@ -345,19 +256,16 @@
 						<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
 							<div class="flex items-center space-x-4">
 								<div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-									<span class="text-white font-semibold text-sm">{duty.subCategory.charAt(0)}</span>
+									<span class="text-white font-semibold text-sm">{duty.title.charAt(0)}</span>
 								</div>
 								<div class="flex-1">
-									<p class="font-medium text-gray-900">{duty.subCategory} - {duty.type}</p>
-									<p class="text-sm text-gray-500">Assigned to {duty.assignedTo} • {duty.createdAt.toLocaleDateString()}</p>
+									<p class="font-medium text-gray-900">{duty.title} - {duty.dutyType.label}</p>
+									<p class="text-sm text-gray-500">Role: {duty.role} • {duty.createdAt.toLocaleDateString()}</p>
 								</div>
 							</div>
 							<div class="flex items-center space-x-3">
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getFrequencyColor(duty.frequency)}">
+								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 									{duty.frequency}
-								</span>
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusColor(duty.status)}">
-									{duty.status}
 								</span>
 							</div>
 						</div>

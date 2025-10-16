@@ -1,98 +1,20 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import type { PageData } from './$types';
+	import IssueForm from '$lib/components/IssueForm.svelte';
+
+	interface Props {
+		data: PageData;
+	}
+
+	let { data }: Props = $props();
 
 	let activeTab = $state('dashboard');
 	let selectedCategory = $state<string | null>(null);
-	let issues = $state<Array<{
-		id: string;
-		type: string;
-		category: string;
-		subCategory: string;
-		status: string;
-		location: string;
-		contact: string;
-		assignedTo?: string;
-		createdBy: string;
-		createdAt: Date;
-		priority: 'Low' | 'Medium' | 'High' | 'Critical';
-		description: string;
-	}>>([]);
-
-	// Mock data for issues
-	onMount(() => {
-		issues = [
-			{
-				id: '1',
-				type: 'External',
-				category: 'Repairs',
-				subCategory: 'Plumbing',
-				status: 'Reported',
-				location: 'Kitchen',
-				contact: 'Plumber: +91-9876543210',
-				assignedTo: 'Father',
-				createdBy: 'Mother',
-				createdAt: new Date('2025-10-15'),
-				priority: 'High',
-				description: 'Kitchen sink is leaking and needs immediate repair'
-			},
-			{
-				id: '2',
-				type: 'Internal',
-				category: 'Emergency',
-				subCategory: 'Electrical',
-				status: 'In Progress',
-				location: 'Bathroom',
-				contact: 'Electrician: +91-9876543211',
-				assignedTo: 'Son',
-				createdBy: 'Father',
-				createdAt: new Date('2025-10-14'),
-				priority: 'Critical',
-				description: 'Bathroom light fixture is not working'
-			},
-			{
-				id: '3',
-				type: 'External',
-				category: 'Maintenance',
-				subCategory: 'Appliance',
-				status: 'Resolved',
-				location: 'Garden',
-				contact: 'Gardener: +91-9876543212',
-				assignedTo: 'Mother',
-				createdBy: 'Daughter',
-				createdAt: new Date('2025-10-13'),
-				priority: 'Medium',
-				description: 'Garden watering system maintenance completed'
-			},
-			{
-				id: '4',
-				type: 'External',
-				category: 'Upgrades',
-				subCategory: 'Internet',
-				status: 'Reported',
-				location: 'Home Office',
-				contact: 'ISP: +91-9876543213',
-				assignedTo: 'Father',
-				createdBy: 'Son',
-				createdAt: new Date('2025-10-12'),
-				priority: 'Medium',
-				description: 'Need to upgrade internet speed for better connectivity'
-			},
-			{
-				id: '5',
-				type: 'Internal',
-				category: 'Urgent',
-				subCategory: 'Cleaning',
-				status: 'In Progress',
-				location: 'Living Room',
-				contact: 'Internal',
-				assignedTo: 'Daughter',
-				createdBy: 'Mother',
-				createdAt: new Date('2025-10-11'),
-				priority: 'High',
-				description: 'Deep cleaning needed for Diwali preparations'
-			}
-		];
-	});
+	let issues = $state<any[]>(data.issues);
+	let showForm = $state(false);
+	let formMode = $state<'create' | 'edit'>('create');
+	let selectedIssueCategory = $state('');
+	let editingIssue = $state<any>(null);
 
 	// KPI calculations
 	const totalIssues = $derived(issues.length);
@@ -133,13 +55,59 @@
 		}
 	}
 
-	function getPriorityColor(priority: string) {
-		switch (priority) {
-			case 'Critical': return 'text-red-600 bg-red-100';
-			case 'High': return 'text-orange-600 bg-orange-100';
-			case 'Medium': return 'text-yellow-600 bg-yellow-100';
-			case 'Low': return 'text-green-600 bg-green-100';
-			default: return 'text-gray-600 bg-gray-100';
+	function openCreateForm(category: string) {
+		selectedIssueCategory = category;
+		formMode = 'create';
+		editingIssue = null;
+		showForm = true;
+	}
+
+	function openEditForm(issue: any) {
+		selectedIssueCategory = issue.category;
+		formMode = 'edit';
+		editingIssue = issue;
+		showForm = true;
+	}
+
+	function closeForm() {
+		showForm = false;
+		selectedIssueCategory = '';
+		editingIssue = null;
+	}
+
+	async function handleFormSubmit(event: CustomEvent) {
+		const { formData } = event.detail;
+
+		try {
+			const formDataObj = new FormData();
+			Object.entries(formData).forEach(([key, value]) => {
+				if (key === 'childData') {
+					formDataObj.append(key, JSON.stringify(value));
+				} else {
+					formDataObj.append(key, value as string);
+				}
+			});
+
+			if (formMode === 'edit' && editingIssue) {
+				formDataObj.append('id', editingIssue.id);
+			}
+
+			const action = formMode === 'create' ? '?/createIssue' : '?/updateIssue';
+			const response = await fetch(action, {
+				method: 'POST',
+				body: formDataObj
+			});
+
+			if (response.ok) {
+				// Reload the page to get updated data
+				window.location.reload();
+			} else {
+				console.error('Error saving issue');
+				// In a real app, you'd show an error message to the user
+			}
+		} catch (error) {
+			console.error('Error saving issue:', error);
+			// In a real app, you'd show an error message to the user
 		}
 	}
 </script>
@@ -176,19 +144,17 @@
 						<div class="flex items-start justify-between mb-4">
 							<div class="flex items-center space-x-3">
 								<div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-									<span class="text-white font-semibold text-sm">{issue.subCategory.charAt(0)}</span>
+									<span class="text-white font-semibold text-sm">{issue.category.charAt(0)}</span>
 								</div>
 								<div>
-									<h3 class="font-semibold text-gray-900">{issue.subCategory}</h3>
+									<h3 class="font-semibold text-gray-900">{issue.category}</h3>
 									<p class="text-sm text-gray-500">{issue.location}</p>
 								</div>
 							</div>
-							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getPriorityColor(issue.priority)}">
-								{issue.priority}
+							<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusColor(issue.status)}">
+								{issue.status}
 							</span>
 						</div>
-
-						<p class="text-gray-700 mb-4 text-sm">{issue.description}</p>
 
 						<div class="space-y-2 mb-4">
 							<div class="flex justify-between text-sm">
@@ -197,12 +163,21 @@
 							</div>
 							<div class="flex justify-between text-sm">
 								<span class="text-gray-500">Contact:</span>
-								<span class="font-medium text-blue-600">{issue.contact}</span>
+								<span class="font-medium">{issue.contact || 'N/A'}</span>
 							</div>
 							<div class="flex justify-between text-sm">
 								<span class="text-gray-500">Assigned:</span>
 								<span class="font-medium">{issue.assignedTo || 'Unassigned'}</span>
 							</div>
+						</div>
+
+						<div class="flex justify-end space-x-2">
+							<button
+								onclick={() => openEditForm(issue)}
+								class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+							>
+								Edit
+							</button>
 						</div>
 
 						<div class="flex items-center justify-between">
@@ -311,20 +286,31 @@
 				<h2 class="text-2xl font-bold text-gray-900 mb-6">Issue Categories</h2>
 				<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 					{#each categories as category}
-						<button
-							onclick={() => selectedCategory = category.id}
-							class="group relative bg-gradient-to-br {category.color} rounded-xl p-6 text-white hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden"
-						>
+						<div class="group relative bg-gradient-to-br {category.color} rounded-xl p-6 text-white hover:shadow-xl transition-all duration-300 hover:scale-105 overflow-hidden">
 							<div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
 							<div class="relative z-10">
 								<div class="text-3xl mb-3">{category.icon}</div>
 								<h3 class="font-semibold text-lg mb-1">{category.name}</h3>
 								<p class="text-sm opacity-90">{issuesByCategory[category.name]?.length || 0} issues</p>
+								<div class="flex space-x-2 mt-4">
+									<button
+										onclick={() => selectedCategory = category.id}
+										class="flex-1 bg-white/20 hover:bg-white/30 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+									>
+										View
+									</button>
+									<button
+										onclick={() => openCreateForm(category.name)}
+										class="bg-white/20 hover:bg-white/30 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors"
+									>
+										+
+									</button>
+								</div>
 							</div>
 							<div class="absolute -top-2 -right-2 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
 								<span class="text-xs font-bold">{issuesByCategory[category.name]?.length || 0}</span>
 							</div>
-						</button>
+						</div>
 					{/each}
 				</div>
 			</div>
@@ -337,17 +323,14 @@
 						<div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
 							<div class="flex items-center space-x-4">
 								<div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-									<span class="text-white font-semibold text-sm">{issue.subCategory.charAt(0)}</span>
+									<span class="text-white font-semibold text-sm">{issue.category.charAt(0)}</span>
 								</div>
 								<div class="flex-1">
-									<p class="font-medium text-gray-900">{issue.subCategory} - {issue.location}</p>
+									<p class="font-medium text-gray-900">{issue.category} - {issue.location}</p>
 									<p class="text-sm text-gray-500">by {issue.createdBy} • {issue.createdAt.toLocaleDateString()}</p>
 								</div>
 							</div>
 							<div class="flex items-center space-x-3">
-								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getPriorityColor(issue.priority)}">
-									{issue.priority}
-								</span>
 								<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {getStatusColor(issue.status)}">
 									{issue.status}
 								</span>
@@ -356,6 +339,19 @@
 					{/each}
 				</div>
 			</div>
+		</div>
+	{/if}
+
+	<!-- Issue Form Modal -->
+	{#if showForm}
+		<div class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+			<IssueForm
+				issueCategory={selectedIssueCategory}
+				mode={formMode}
+				initialData={editingIssue}
+				on:submit={handleFormSubmit}
+				on:cancel={closeForm}
+			/>
 		</div>
 	{/if}
 </div>

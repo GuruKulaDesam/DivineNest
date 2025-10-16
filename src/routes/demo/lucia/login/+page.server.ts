@@ -1,10 +1,8 @@
 import { hash, verify } from '@node-rs/argon2';
 import { encodeBase32LowerCase } from '@oslojs/encoding';
 import { fail, redirect } from '@sveltejs/kit';
-import { eq } from 'drizzle-orm';
 import * as auth from '$lib/server/auth';
 import { db } from '$lib/server/db';
-import * as table from '$lib/server/db/schema';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -29,9 +27,10 @@ export const actions: Actions = {
 			return fail(400, { message: 'Invalid password (min 6, max 255 characters)' });
 		}
 
-		const results = await db.select().from(table.user).where(eq(table.user.username, username));
+		const existingUser = await db.user.findUnique({
+			where: { username: username }
+		});
 
-		const existingUser = results.at(0);
 		if (!existingUser) {
 			return fail(400, { message: 'Incorrect username or password' });
 		}
@@ -74,11 +73,14 @@ export const actions: Actions = {
 		});
 
 		try {
-			await db.insert(table.user).values({ 
-				id: userId, 
-				username, 
-				passwordHash,
-				role: 'Admin' // Default role for new users
+			await db.user.create({
+				data: {
+					id: userId,
+					username,
+					passwordHash,
+					role: 'Admin', // Default role for new users
+					joinedDate: new Date()
+				}
 			});
 
 			const sessionToken = auth.generateSessionToken();
